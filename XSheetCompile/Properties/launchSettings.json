@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "XSheetDecompile": {
+      "commandName": "Project",
+      "commandLineArgs": "BIK00a.xs1"
+    }
+  }
+}
