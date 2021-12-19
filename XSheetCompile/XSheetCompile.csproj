@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="BIK00a.xs1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Sapphire Extract Helpers\Sapphire Extract Helpers.csproj" />
   </ItemGroup>
 

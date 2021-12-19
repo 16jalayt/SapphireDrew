@@ -87,6 +87,23 @@ namespace Sapphire_Extract_Helpers
                 return true;
         }
 
+        //same as assert string but with reset steam.
+        public static bool AssertHeader(BetterBinaryReader InStream, string val)
+        {
+            InStream.Seek(0);
+            string readValues = String(InStream.ReadBytes(val.Length));
+            //string readValues = String(InStream.ReadBytes(val.Length));
+            //Log.Warning(readValues);
+            if (readValues != val)
+            {
+                Console.WriteLine($"Value in file {InStream.FileName} at position '{InStream.Position()}'...");
+                Console.WriteLine($"Expected value '{val}' got '{readValues}'");
+                return false;
+            }
+            else
+                return true;
+        }
+
         //may not use
         public static void AssertValueAbort(byte[] val)
         {

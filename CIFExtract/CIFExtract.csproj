@@ -6,6 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="CIFTREE dogs.DAT" />
+    <None Remove="Ciftree man.dat" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Sapphire Extract Helpers\Sapphire Extract Helpers.csproj" />
   </ItemGroup>
 
