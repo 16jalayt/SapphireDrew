@@ -1,0 +1,36 @@
+1. Secrets Can Kill (PC 1998)	ciftree version: 2.0
+2. Stay Tuned for Danger (PC 1999)			2.1
+3. Message in a Haunted Mansion (PC 2000)	2.1
+4. Treasure in the Royal Tower (PC 2001)	2.1
+5. The Final Scene (PC 2001)				2.1
+6. Secret of the Scarlet Hand (PC 2002)		2.1
+7. Ghost Dogs of Moon Lake (PC 2002)		2.1
+8. The Haunted Carousel (PC 2003)			2.1
+9. Danger on Deception Island (PC 2003)		2.1
+10. The Secret of Shadow Ranch (PC 2004)	2.1
+11. Curse of Blackmoor Manor (PC 2004)		2.1
+12. Secret of the Old Clock (PC 2005)		2.2 no known changes except version bump
+13. Last Train to Blue Moon Canyon (PC 2005)2.2
+14. Danger By Design (PC 2006)				2.2
+15. The Creature of Kapu Cave (PC 2006)		2.2
+16. White Wolf of Icicle Creek (PC 2007/Nintendo Wii 2008)	2.3 tga now comes with header
+17. Legend of the Crystal Skull (PC 2007)	2.3
+18. The Phantom of Venice (PC 2008)			3.0 now png
+19. The Haunting of Castle Malloy (PC 2008)	3.0
+19.5 Lights, Camera, Curses (PC 2008) November 11, 2008 (retail?) May 5, 2009 (bfg?) December, 2008 (website)	3.0
+20. Ransom of the Seven Ships (PC 2009) July 14, 2009		3.0
+20.5 Resorting to Danger (PC 2009) August 25, 2009			3.0
+21. Warnings at Waverly Academy (PC 2009) October 13, 2009	3.0
+22. Trail of the Twister (PC/Mac 2010)			3.0
+22.5 Secrets Can Kill Remastered (PC/Mac 2010)	3.0
+23. Shadow at the Water's Edge (PC/Mac 2010)	3.0
+24. The Captive Curse (PC/Mac 2011)				3.0
+25. Alibi in Ashes (PC/Mac 2011)				3.0
+26. Tomb of the Lost Queen (PC/Mac 2012)		3.0
+27. The Deadly Device (PC/Mac 2012)				3.0
+28. Ghost of Thornton Hall (PC/Mac 2013)		3.0
+29. The Silent Spy (PC/Mac 2013)				3.0
+30. The Shattered Medallion (PC/Mac 2014)		3.0
+31. Labyrinth of Lies (PC/Mac 2014)				3.0
+32. Sea of Darkness (PC/Mac 2015)				Loose
+33. Midnight in Salem (December of 2019)		N/A

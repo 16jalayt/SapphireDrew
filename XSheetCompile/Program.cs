@@ -12,7 +12,7 @@ namespace XSheetCompile
         {
             if (args.Length < 1)
             {
-                Console.WriteLine($"Usage is XSheetDecompile.exe filename\n");
+                Console.WriteLine($"Usage is XSheetCompile.exe filename\n");
                 return;
             }
 

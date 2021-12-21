@@ -2,7 +2,7 @@
   "profiles": {
     "CIFExtract": {
       "commandName": "Project",
-      "commandLineArgs": "\"CIFTREE dogs.DAT\""
+      "commandLineArgs": "\"Ciftree twister.dat\""
     }
   }
 }

@@ -1,0 +1,68 @@
+Ciftree revisions:
+1.0 (prototype?)
+2.0 secrets
+2.1 stay tuned- blackmoor
+2.2 clock - kapu. no known changes except version bump
+2.3  wolf- skull. tga now comes with header
+3.0 venice - lies. now png
+Loose: Sea
+
+lua:
+
+
+bink versions:
+
+Things to investigate:
+dosier/ ports different team?
+
+ui redesign:
+
+Sound engine:
+vampire : DiamondWare stk
+sck - stay tuned : sos95?
+dsound
+libsndfile/openal - Silent Spy
+
+https://nancydrewgames.fandom.com/wiki/Nancy_Drew_(series)
+wrong. sck remastered is 22.5. everything below is off by one
+
+List of games:
+1. Secrets Can Kill (PC 1998)
+2. Stay Tuned for Danger (PC 1999)
+3. Message in a Haunted Mansion (PC 2000)
+4. Treasure in the Royal Tower (PC 2001)
+5. The Final Scene (PC 2001)
+6. Secret of the Scarlet Hand (PC 2002)
+7. Ghost Dogs of Moon Lake (PC 2002)
+8. The Haunted Carousel (PC 2003)
+9. Danger on Deception Island (PC 2003)
+10. The Secret of Shadow Ranch (PC 2004)
+11. Curse of Blackmoor Manor (PC 2004)
+12. Secret of the Old Clock (PC 2005)
+13. Last Train to Blue Moon Canyon (PC 2005)
+14. Danger By Design (PC 2006)
+15. The Creature of Kapu Cave (PC 2006)
+16. White Wolf of Icicle Creek (PC 2007/Nintendo Wii 2008)
+17. Legend of the Crystal Skull (PC 2007)
+18. The Phantom of Venice (PC 2008)
+19. The Haunting of Castle Malloy (PC 2008)
+19.5 Lights, Camera, Curses (PC 2008) November 11, 2008 (retail?) May 5, 2009 (bfg?) December, 2008 (website)
+20. Ransom of the Seven Ships (PC 2009) July 14, 2009
+20.5 Resorting to Danger (PC 2009) August 25, 2009
+21. Warnings at Waverly Academy (PC 2009) October 13, 2009
+22. Trail of the Twister (PC/Mac 2010)
+22.5 Secrets Can Kill Remastered (PC/Mac 2010)
+23. Shadow at the Water's Edge (PC/Mac 2010)
+24. The Captive Curse (PC/Mac 2011)
+25. Alibi in Ashes (PC/Mac 2011)
+26. Tomb of the Lost Queen (PC/Mac 2012)
+27. The Deadly Device (PC/Mac 2012)
+28. Ghost of Thornton Hall (PC/Mac 2013)
+29. The Silent Spy (PC/Mac 2013)
+30. The Shattered Medallion (PC/Mac 2014)
+31. Labyrinth of Lies (PC/Mac 2014)
+32. Sea of Darkness (PC/Mac 2015)
+33. Midnight in Salem (December of 2019)
+
+https://en.wikipedia.org/wiki/List_of_Nancy_Drew_video_games
+https://nancydrewgames.fandom.com/wiki/Nancy_Drew_(series)
