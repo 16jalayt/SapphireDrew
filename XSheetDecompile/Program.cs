@@ -33,14 +33,14 @@ namespace XSheetDecompile
             //0 padding
             InStream.Skip(9);
 
-            if (!Helpers.AssertInt(InStream, 2)) ;
+            if (!Helpers.AssertInt(InStream, 2))
                 Console.WriteLine($"The unknown value of 2 at the begining is different\n");
 
             short NumFrames = InStream.ReadShort();
             Console.WriteLine($"Number of frames: {NumFrames}");
 
-            if (!Helpers.AssertShort(InStream, 2)) ;
-            Console.WriteLine($"The unknown value of 2 after numframes is different\n");
+            if (!Helpers.AssertShort(InStream, 2))
+                Console.WriteLine($"The unknown value of 2 after numframes is different\n");
 
             string BodyName = Helpers.String(InStream.ReadBytes(33)).Trim('\0').ToLower();
             Console.WriteLine($"BodyName: {BodyName}");
@@ -61,11 +61,11 @@ namespace XSheetDecompile
             //null padding
             InStream.Skip(32);
 
-            if (!Helpers.AssertInt(InStream, 66)) ;
+            if (!Helpers.AssertInt(InStream, 66))
                 Console.WriteLine($"The unknown value of 66 before the frames is different\n");
 
             int[] framestorage = new int[NumFrames];
-            for (int i=0; i<NumFrames; i++)
+            for (int i = 0; i < NumFrames; i++)
             {
                 int framenum = InStream.ReadInt();
                 framestorage[i] = framenum;
@@ -74,7 +74,7 @@ namespace XSheetDecompile
 
             InStream.Dispose();
 
-            FileInfo file = new FileInfo("Output/" + FileName);
+            FileInfo file = new FileInfo(Path.GetDirectoryName(FileName) + "/Output/" + Path.GetFileNameWithoutExtension(FileName) + ".xs1");
             file.Directory.Create();
             using (StreamWriter writetext = new StreamWriter(file.FullName))
             {
@@ -87,7 +87,7 @@ namespace XSheetDecompile
 
                 for (int i = 0; i < NumFrames; i++)
                 {
-                    writetext.WriteLine($"FRAME {i+1}={framestorage[i]}");
+                    writetext.WriteLine($"FRAME {i + 1}={framestorage[i]}");
                 }
             }
         }

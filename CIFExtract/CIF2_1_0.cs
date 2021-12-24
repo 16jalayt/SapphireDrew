@@ -1,17 +1,13 @@
 ﻿using Sapphire_Extract_Helpers;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CIFExtract
 {
-    class CIF2_1_0
+    internal class CIF2_1_0
     {
         public static void Extract(BetterBinaryReader InStream)
         {
-            Console.WriteLine($"VERSION NOT IMPLEMENTED");
+            Console.WriteLine($"VERSION NOT IMPLEMENTED\n");
         }
     }
 }

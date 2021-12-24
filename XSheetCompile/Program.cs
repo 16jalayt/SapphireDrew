@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
+//TODO: have cif ext call xsheet decompile
+
 namespace XSheetCompile
 {
     internal class Program
@@ -146,7 +148,7 @@ namespace XSheetCompile
             }
 
             //Everything is in order. Time to write the output.
-            FileInfo file = new FileInfo("Output/" + FileName);
+            FileInfo file = new FileInfo(Path.GetDirectoryName(FileName) + "/Output/" + Path.GetFileNameWithoutExtension(FileName) + ".xsheet");
             file.Directory.Create();
             BinaryWriter outStream = new BinaryWriter(new FileStream(file.FullName, FileMode.Create), Encoding.UTF8);
             //have to convert string to byte array to prevent string being prefixed by length automatically.
@@ -170,7 +172,7 @@ namespace XSheetCompile
             outStream.Write(headRect[3]);
             outStream.Write(new byte[32]);
             outStream.Write(66);
-            for(int i=1; i< frameStore.Count+1; i++)
+            for (int i = 1; i < frameStore.Count + 1; i++)
             {
                 outStream.Write(frameStore.GetValueOrDefault(i));
                 outStream.Write(-1);

@@ -116,13 +116,13 @@ namespace Sapphire_Extract_Helpers
         /// <param name="fileName"></param>
         /// <param name="fileContents"></param>
         /// <param name="subdir"></param>
-        public static void Write(string filePath, string fileName, byte[] fileContents, bool subdir = true)
+        public static string Write(string filePath, string fileName, byte[] fileContents, bool subdir = true)
         {
             //It means to interpret the string literally
             //@"\\servername\share\folder"
             //is nicer than this:
             //"\\\\servername\\share\\folder"
-            Writer.WriteFile(@filePath, fileName, fileContents, subdir);
+            return Writer.WriteFile(@filePath, fileName, fileContents, subdir);
         }
         public static void setOverwriteAll(bool val)
         {

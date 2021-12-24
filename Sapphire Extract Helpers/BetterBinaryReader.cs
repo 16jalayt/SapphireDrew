@@ -22,6 +22,15 @@ namespace Sapphire_Extract_Helpers
         {
             _br.BaseStream.Seek(pos, SeekOrigin.Begin);
         }
+        public void Seek(long pos, SeekOrigin origin)
+        {
+            _br.BaseStream.Seek(pos, origin);
+        }
+
+        public long Length()
+        {
+            return _fs.Length;
+        }
 
         public long Skip(long offset)
         {
@@ -47,6 +56,10 @@ namespace Sapphire_Extract_Helpers
         public byte[] ReadBytes(int len)
         {
             return _br.ReadBytes(len);
+        }
+        public byte ReadByte()
+        {
+            return _br.ReadByte();
         }
 
         public void Dispose()

@@ -4,10 +4,10 @@ using System.IO;
 
 namespace CIFExtract
 {
-    class Program
+    internal class Program
     {
         //TODO: cal files
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             if (args.Length < 1)
             {
@@ -44,7 +44,7 @@ namespace CIFExtract
             else if (verMajor == 2 && verMinor == 0)
                 CIF2_0.Extract(InStream);
             //else if (verMajor == 2 && verMinor == 1)
-                //CIF2_1.Extract(InStream);
+            //CIF2_1.Extract(InStream);
             else
                 Console.WriteLine($"CIFF version not recognised.");
         }

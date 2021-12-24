@@ -8,7 +8,7 @@ namespace Sapphire_Extract_Helpers
         public static bool OverwriteAll;
         public static bool AutoRename;
 
-        public static void WriteFile(string filePath, string fileName, byte[] fileContents, bool subdir)
+        public static string WriteFile(string filePath, string fileName, byte[] fileContents, bool subdir)
         {
             string outPath;
             if (subdir)
@@ -22,13 +22,13 @@ namespace Sapphire_Extract_Helpers
             }
             //Log.Debug("output file: " + outPath);
 
-            if(OverwriteAll)
+            if (OverwriteAll)
             {
                 File.WriteAllBytes(outPath, fileContents);
             }
             else
             {
-                if(File.Exists(outPath))
+                if (File.Exists(outPath))
                 {
                     //Prompt user
                     Console.WriteLine("File exists. Overwrite (yes,no,all):");
@@ -60,6 +60,7 @@ namespace Sapphire_Extract_Helpers
                     File.WriteAllBytes(outPath, fileContents);
                 }
             }
+            return outPath;
         }
     }
 }
