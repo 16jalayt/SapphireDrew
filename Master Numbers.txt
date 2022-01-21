@@ -1,8 +1,8 @@
 The most notable change between cif revisions is name field length. The other being graphics format.
 Ciftree revisions:
 1.0 (prototype?)
-2.0 secrets
-2.1 stay tuned- blackmoor
+2.0 secrets. ff end of name table entry
+2.1 stay tuned- blackmoor. only dan ends in ff
 2.2 clock - kapu. no known changes except version bump
 2.3  wolf- skull. tga now comes with header
 3.0 venice - lies. now png

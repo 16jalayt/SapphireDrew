@@ -9,7 +9,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XSheetDecompile", "XSheetDe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sapphire Extract Helpers", "Sapphire Extract Helpers\Sapphire Extract Helpers.csproj", "{63277F21-8667-4AC5-9959-0BAA5BA2867B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XSheetCompile", "XSheetCompile\XSheetCompile.csproj", "{48943FC7-669C-4C8B-B91F-2EFBD350EBB7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XSheetCompile", "XSheetCompile\XSheetCompile.csproj", "{48943FC7-669C-4C8B-B91F-2EFBD350EBB7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CIFPack", "CIFPack\CIFPack.csproj", "{7728FFC8-DC4F-4973-B60A-BCA82365E5BA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HIFFDecompile", "HIFFDecompile\HIFFDecompile.csproj", "{B8EA8202-70F2-4660-B911-52D574793AD6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HIFFCompile", "HIFFCompile\HIFFCompile.csproj", "{C49E1FD3-99DD-4B4F-B67B-748A40820456}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +39,18 @@ Global
 		{48943FC7-669C-4C8B-B91F-2EFBD350EBB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{48943FC7-669C-4C8B-B91F-2EFBD350EBB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{48943FC7-669C-4C8B-B91F-2EFBD350EBB7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7728FFC8-DC4F-4973-B60A-BCA82365E5BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7728FFC8-DC4F-4973-B60A-BCA82365E5BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7728FFC8-DC4F-4973-B60A-BCA82365E5BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7728FFC8-DC4F-4973-B60A-BCA82365E5BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8EA8202-70F2-4660-B911-52D574793AD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8EA8202-70F2-4660-B911-52D574793AD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8EA8202-70F2-4660-B911-52D574793AD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8EA8202-70F2-4660-B911-52D574793AD6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C49E1FD3-99DD-4B4F-B67B-748A40820456}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C49E1FD3-99DD-4B4F-B67B-748A40820456}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C49E1FD3-99DD-4B4F-B67B-748A40820456}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C49E1FD3-99DD-4B4F-B67B-748A40820456}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
