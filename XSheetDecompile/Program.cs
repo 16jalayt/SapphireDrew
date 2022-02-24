@@ -8,6 +8,11 @@ namespace XSheetDecompile
     {
         private static void Main(string[] args)
         {
+            //Tool status
+            //Console.WriteLine($"CURRENTLY BROKEN\n");
+            Console.WriteLine($"EXPEREMENTAL\n");
+            //Console.WriteLine($"UNVALIDATED\n");
+
             if (args.Length < 1)
             {
                 Console.WriteLine($"Usage is XSheetDecompile.exe filename\n");

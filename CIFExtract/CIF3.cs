@@ -45,13 +45,13 @@ namespace CIFExtract
                 if (header2 != "CIF FILE HerInteractive")
                 {
                     //Must be a loose cif file. Have to get name from filename and is 0 offset in file.
-                    ParseChunk(InStream, Path.GetFileNameWithoutExtension(InStream.FileName), 0);
+                    ParseChunk(InStream, verMajor, verMinor, Path.GetFileNameWithoutExtension(InStream.FileName), 0);
                     return;
                 }
             }
             else if (header == "CIF FILE WayneSikes")
             {
-                ParseChunk(InStream, InStream.FileName, 0);
+                ParseChunk(InStream, verMajor, verMinor, InStream.FileName, 0);
             }
             //else must be a tree
 
@@ -83,7 +83,11 @@ namespace CIFExtract
             if (verMajor != 3)
             {
                 //2k of some sort of hash table.
-                InStream.Skip(2048);
+                //InStream.Skip(2048);
+                for (int i = 0; i < 1024; i++)
+                {
+                    Console.WriteLine($"{i}:{InStream.ReadShort()}");
+                }
             }
 
             //TODO: possible efficiency increase if parse to list and read files sequentially
@@ -143,7 +147,7 @@ namespace CIFExtract
                 {
                     filePointer = InStream.ReadInt();
                     placeholder = InStream.Position();
-                    ParseChunk(InStream, fileName, filePointer);
+                    ParseChunk(InStream, verMajor, verMinor, fileName, filePointer);
                 }
                 //3 only has name and pointer
                 else if (verMajor != 3)
@@ -201,15 +205,18 @@ namespace CIFExtract
                         _ = InStream.ReadShort();
 
                     placeholder = InStream.Position();
-                    ParseChunk(InStream, fileName, filePointer);
+                    //For !v3 return data and add tga header. Pain to pass, or make object
+                    ParseChunk(InStream, verMajor, verMinor, fileName, filePointer);
                 }
             }
         }
 
         //CURRENTLY v3 specific
-        private static void ParseChunk(BetterBinaryReader InStream, string FileName, long FilePointer)
+        private static void ParseChunk(BetterBinaryReader InStream, short verMajor, short verMinor, string FileName, int FileLength, long FilePointer)
         {
             InStream.Seek(FilePointer);
+
+            string FileExtension = ".unk";
 
             if (verMajor == 3)
             {
@@ -220,13 +227,13 @@ namespace CIFExtract
                 Helpers.AssertInt(InStream, 3);
 
                 int FileType = InStream.ReadInt();
-                string FileExtension = GetExtension(InStream, FileType);
+                FileExtension = GetExtension(InStream, FileType);
 
                 //null padded
                 InStream.Skip(12);
-            }
 
-            int FileLength = InStream.ReadInt();
+                FileLength = InStream.ReadInt();
+            }            
 
             byte[] FileContents = InStream.ReadBytes(FileLength);
 

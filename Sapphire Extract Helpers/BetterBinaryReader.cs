@@ -8,11 +8,13 @@ namespace Sapphire_Extract_Helpers
         private FileStream _fs;
         private BinaryReader _br;
         public string FileName { get; }
+        public string FileNameWithoutExtension { get; }
         public string FilePath { get; }
 
         public BetterBinaryReader(string filePath)
         {
             FilePath = Path.GetFullPath(@filePath);
+            FileNameWithoutExtension = Path.GetFileNameWithoutExtension(FilePath);
             FileName = Path.GetFileName(FilePath);
             _fs = new FileStream(@filePath, FileMode.Open);
             _br = new BinaryReader(_fs, Encoding.Default);

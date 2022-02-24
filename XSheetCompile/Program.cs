@@ -12,6 +12,11 @@ namespace XSheetCompile
     {
         private static void Main(string[] args)
         {
+            //Tool status
+            //Console.WriteLine($"CURRENTLY BROKEN\n");
+            Console.WriteLine($"EXPEREMENTAL\n");
+            //Console.WriteLine($"UNVALIDATED\n");
+
             if (args.Length < 1)
             {
                 Console.WriteLine($"Usage is XSheetCompile.exe filename\n");
