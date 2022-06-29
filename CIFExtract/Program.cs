@@ -23,7 +23,7 @@ namespace CIFExtract
                 return;
             }
             BetterBinaryReader InStream = new BetterBinaryReader(FileName);
-            
+
             CIF3.Extract(InStream);
             /*if (verMajor == 3 && verMinor == 0)
                 CIF3.Extract(InStream);

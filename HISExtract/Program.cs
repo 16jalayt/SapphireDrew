@@ -35,26 +35,25 @@ namespace HISExtract
                 return;
             }
 
+            //unconfirmed: version, seems to be 1 in older games?
             if (!Helpers.AssertInt(InStream, 2))
                 Console.WriteLine($"The unknown value of 2 at the begining is different\n");
 
-            short VerMajor = InStream.ReadShort();
-            Console.WriteLine($"Major Version: {VerMajor}");
+            //format should be 1 for pcm
+            short wavFormat = InStream.ReadShort();
+            short numChannels = InStream.ReadShort();
 
-            short VerMinor = InStream.ReadShort();
-            Console.WriteLine($"Minor Version: {VerMinor}");
-
-            //skip header info, as we just need to trim header off
+            //skip header info, as we just need to trim header off for ogg
             //Contents of header:
             //Samplerate: ~44100
-            //Unknown int: Same in same game
-            //Short: Either 2 or 4
-            //Short: Always 16?
+            //Calculated data rate: (Sample Rate * BitsPerSample * Channels) / 8
+            //Short: Either 2 or 4: (BitsPerSample * Channels)
+            //Short Bits per sample: Always 16
             //Int: Changes between files
-            //Short in 1.1, int in 1.2
+            //Short or int 
 
             InStream.Skip(16);
-            if(VerMajor == 1 && VerMinor == 1)
+            if (VerMajor == 1 && VerMinor == 1)
                 InStream.Skip(2);
             else if (VerMajor == 1 && VerMinor == 2)
                 InStream.Skip(4);
@@ -64,7 +63,7 @@ namespace HISExtract
                 return;
             }
 
-            int RemainingLength = (int) (InStream.Length() - InStream.Position());
+            int RemainingLength = (int)(InStream.Length() - InStream.Position());
 
             byte[] FileContents = InStream.ReadBytes(RemainingLength);
             Helpers.Write(InStream.FilePath, InStream.FileNameWithoutExtension + ".ogg", FileContents, false);

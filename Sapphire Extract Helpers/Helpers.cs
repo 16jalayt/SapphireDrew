@@ -29,14 +29,14 @@ namespace Sapphire_Extract_Helpers
         }
 
         /// <summary>
-        /// Read an int and print if not equal.
+        /// Read an byte and print if not equal.
         /// </summary>
         /// <param name="InStream"></param>
         /// <param name="val"></param>
         /// <returns>Truth</returns>
-        public static bool AssertInt(BetterBinaryReader InStream, int val)
+        public static bool AssertByte(BetterBinaryReader InStream, int val)
         {
-            int readValue = InStream.ReadInt();
+            byte readValue = InStream.ReadByte();
             if (readValue != val)
             {
                 //TODO:figure out better output. prints int
@@ -45,6 +45,35 @@ namespace Sapphire_Extract_Helpers
                 return false;
             }
             return true;
+        }
+
+        /// <summary>
+        /// Read an int and print if not equal.
+        /// </summary>
+        /// <param name="InStream"></param>
+        /// <param name="val"></param>
+        /// <returns>Truth</returns>
+        public static bool AssertInt(BetterBinaryReader InStream, int val, bool LittleEndian = true)
+        {
+            int readValue = 0;
+            if (LittleEndian)
+                readValue = InStream.ReadInt();
+            else
+                readValue = InStream.ReadInt();
+
+            if (readValue != val)
+            {
+                //TODO:figure out better output. prints int
+                Console.WriteLine($"Value in file {InStream.FileName} at position '{InStream.Position() - 4}'...");
+                Console.WriteLine($"Expected value '{val}' got '{readValue}'");
+                return false;
+            }
+            return true;
+        }
+
+        public static bool AssertIntBE(BetterBinaryReader InStream, short val)
+        {
+            return AssertInt(InStream, val, false);
         }
 
         /// <summary>
@@ -53,17 +82,27 @@ namespace Sapphire_Extract_Helpers
         /// <param name="InStream"></param>
         /// <param name="val"></param>
         /// <returns>Truth</returns>
-        public static bool AssertShort(BetterBinaryReader InStream, short val)
+        public static bool AssertShort(BetterBinaryReader InStream, short val, bool LittleEndian = true)
         {
-            short readValue = InStream.ReadShort();
+            short readValue = 0;
+            if (LittleEndian)
+                readValue = InStream.ReadShort();
+            else
+                readValue = InStream.ReadShortBE();
+
             if (readValue != val)
             {
                 //TODO:figure out better output. prints int
-                Console.WriteLine($"Value in file {InStream.FileName} at position '{InStream.Position()}'...");
+                Console.WriteLine($"Value in file {InStream.FileName} at position '{InStream.Position() - 2}'...");
                 Console.WriteLine($"Expected value '{val}' got '{readValue}'");
                 return false;
             }
             return true;
+        }
+
+        public static bool AssertShortBE(BetterBinaryReader InStream, short val)
+        {
+            return AssertShort(InStream, val, false);
         }
 
         /// <summary>
@@ -72,17 +111,20 @@ namespace Sapphire_Extract_Helpers
         /// <param name="InStream"></param>
         /// <param name="val"></param>
         /// <returns></returns>
-        public static bool AssertString(BetterBinaryReader InStream, string val)
+        public static bool AssertString(BetterBinaryReader InStream, string val, bool TrimEnd = false)
         {
+            long position = InStream.Position();
             string readValues = String(InStream.ReadBytes(val.Length));
+            if (TrimEnd == true)
+                readValues = readValues.TrimEnd();
             //string readValues = String(InStream.ReadBytes(val.Length));
             //Log.Warning(readValues);
             if (readValues != val)
             {
-                Console.WriteLine($"Value in file {InStream.FileName} at position '{InStream.Position()}'...");
+                Console.WriteLine($"Value in file {InStream.FileName} at position '{position}'...");
                 Console.WriteLine($"Expected value '{val}' got '{readValues}'");
                 return false;
-            }   
+            }
             else
                 return true;
         }

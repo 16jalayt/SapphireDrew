@@ -5,6 +5,7 @@ using System.IO;
 
 namespace CIFExtract
 {
+    //CIF stands for: Compressed Information Format
     internal class CIF3
     {
         //Variables should be unchanged for rest of cif. Will be set on first run. Program should only run with one cif file.
@@ -45,13 +46,13 @@ namespace CIFExtract
                 if (header2 != "CIF FILE HerInteractive")
                 {
                     //Must be a loose cif file. Have to get name from filename and is 0 offset in file.
-                    ParseChunk(InStream, verMajor, verMinor, Path.GetFileNameWithoutExtension(InStream.FileName), 0);
+                    ParseChunk(InStream, verMajor, verMinor, Path.GetFileNameWithoutExtension(InStream.FileName), 0, 0);
                     return;
                 }
             }
             else if (header == "CIF FILE WayneSikes")
             {
-                ParseChunk(InStream, verMajor, verMinor, InStream.FileName, 0);
+                ParseChunk(InStream, verMajor, verMinor, InStream.FileName, 0, 0);
             }
             //else must be a tree
 
@@ -82,12 +83,12 @@ namespace CIFExtract
             //ver 2 - 2.3
             if (verMajor != 3)
             {
-                //2k of some sort of hash table.
-                //InStream.Skip(2048);
-                for (int i = 0; i < 1024; i++)
+                //2k see CIFPack for explaination.
+                InStream.Skip(2048);
+                /*for (int i = 0; i < 1024; i++)
                 {
                     Console.WriteLine($"{i}:{InStream.ReadShort()}");
-                }
+                }*/
             }
 
             //TODO: possible efficiency increase if parse to list and read files sequentially
@@ -147,7 +148,7 @@ namespace CIFExtract
                 {
                     filePointer = InStream.ReadInt();
                     placeholder = InStream.Position();
-                    ParseChunk(InStream, verMajor, verMinor, fileName, filePointer);
+                    ParseChunk(InStream, verMajor, verMinor, fileName, 0, filePointer);
                 }
                 //3 only has name and pointer
                 else if (verMajor != 3)
@@ -206,7 +207,7 @@ namespace CIFExtract
 
                     placeholder = InStream.Position();
                     //For !v3 return data and add tga header. Pain to pass, or make object
-                    ParseChunk(InStream, verMajor, verMinor, fileName, filePointer);
+                    ParseChunk(InStream, verMajor, verMinor, fileName, CompressedLength, filePointer);
                 }
             }
         }
@@ -233,7 +234,7 @@ namespace CIFExtract
                 InStream.Skip(12);
 
                 FileLength = InStream.ReadInt();
-            }            
+            }
 
             byte[] FileContents = InStream.ReadBytes(FileLength);
 

@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 
 namespace Sapphire_Extract_Helpers
@@ -10,6 +11,8 @@ namespace Sapphire_Extract_Helpers
         public string FileName { get; }
         public string FileNameWithoutExtension { get; }
         public string FilePath { get; }
+
+        public bool debugprint = false;
 
         public BetterBinaryReader(string filePath)
         {
@@ -45,23 +48,69 @@ namespace Sapphire_Extract_Helpers
             return _br.BaseStream.Position;
         }
 
-        public int ReadInt()
+        public int ReadInt(string msg = "")
         {
-            return _br.ReadInt32();
+            int data = _br.ReadInt32();
+            print(msg, data.ToString());
+            return data;
         }
 
-        public short ReadShort()
+        public short ReadShort(string msg = "")
         {
-            return _br.ReadInt16();
+            short data = _br.ReadInt16();
+            print(msg, data.ToString());
+            return data;
         }
 
-        public byte[] ReadBytes(int len)
+        public byte[] ReadBytes(int len, string msg = "")
         {
-            return _br.ReadBytes(len);
+            byte[] data = _br.ReadBytes(len);
+            print(msg, data.ToString());
+            return data;
         }
-        public byte ReadByte()
+        public byte ReadByte(string msg = "")
         {
-            return _br.ReadByte();
+            byte data = _br.ReadByte();
+            print(msg, data.ToString());
+            return data;
+        }
+
+        //Big Endian
+        public int ReadIntBE(string msg = "")
+        {
+            byte[] data = ReadBytes(4);
+            Array.Reverse(data);
+            int dataout = BitConverter.ToInt32(data, 0);
+            print(msg, dataout.ToString());
+            return dataout;
+        }
+
+        public short ReadShortBE(string msg = "")
+        {
+            byte[] data = ReadBytes(2);
+            Array.Reverse(data);
+            short dataout = BitConverter.ToInt16(data, 0);
+            print(msg, dataout.ToString());
+            return dataout;
+        }
+
+        public byte[] ReadBytesBE(int len, string msg = "")
+        {
+            byte[] data = ReadBytes(len);
+            Array.Reverse(data);
+            print(msg, data.ToString());
+            return data;
+        }
+
+        public bool IsEOF()
+        {
+            return this.Position() >= this.Length() ? true : false;
+        }
+
+        private void print(string msg, string data)
+        {
+            if (msg.Length != 0 && debugprint)
+                Console.WriteLine(msg + data);
         }
 
         public void Dispose()

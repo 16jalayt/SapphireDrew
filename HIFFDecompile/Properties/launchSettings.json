@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "HIFFDecompile": {
+      "commandName": "Project",
+      "commandLineArgs": "boot.hiff -v"
+    }
+  }
+}
