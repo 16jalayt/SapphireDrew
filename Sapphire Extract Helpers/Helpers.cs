@@ -4,7 +4,7 @@ namespace Sapphire_Extract_Helpers
 {
     public static class Helpers
     {
-        public static bool Raw;
+        //public static bool Raw;
 
         //TODO: pass multiple possible values. Helper to itter and check returns?
         //TODO: better debug messages(pass guessed value to print?)
@@ -166,23 +166,27 @@ namespace Sapphire_Extract_Helpers
             //"\\\\servername\\share\\folder"
             return Writer.WriteFile(@filePath, fileName, fileContents, subdir);
         }
+
         public static void setOverwriteAll(bool val)
         {
             Writer.OverwriteAll = val;
         }
+
         public static void setAutoRename(bool val)
         {
             Writer.AutoRename = val;
         }
-        public static void setRaw(bool val)
+
+        /*public static void setRaw(bool val)
         {
             Raw = val;
-        }
+        }*/
 
         public static string Hex(byte[] inArray)
         {
             return BitConverter.ToString(inArray).Replace("-", ", ");
         }
+
         public static string String(byte[] inArray)
         {
             return System.Text.Encoding.UTF8.GetString(inArray);
