@@ -10,6 +10,7 @@ namespace Sapphire_Extract_Helpers
         private BinaryReader _br;
         public string FileName { get; }
         public string FileNameWithoutExtension { get; }
+        public string FileExtension { get; }
         public string FilePath { get; }
 
         public bool debugprint = false;
@@ -18,6 +19,7 @@ namespace Sapphire_Extract_Helpers
         {
             FilePath = Path.GetFullPath(@filePath);
             FileNameWithoutExtension = Path.GetFileNameWithoutExtension(FilePath);
+            FileExtension = Path.GetExtension(FilePath);
             FileName = Path.GetFileName(FilePath);
             _fs = new FileStream(@filePath, FileMode.Open);
             _br = new BinaryReader(_fs, Encoding.Default);
@@ -27,6 +29,7 @@ namespace Sapphire_Extract_Helpers
         {
             _br.BaseStream.Seek(pos, SeekOrigin.Begin);
         }
+
         public void Seek(long pos, SeekOrigin origin)
         {
             _br.BaseStream.Seek(pos, origin);
@@ -68,6 +71,7 @@ namespace Sapphire_Extract_Helpers
             print(msg, data.ToString());
             return data;
         }
+
         public byte ReadByte(string msg = "")
         {
             byte data = _br.ReadByte();
@@ -105,6 +109,11 @@ namespace Sapphire_Extract_Helpers
         public bool IsEOF()
         {
             return this.Position() >= this.Length() ? true : false;
+        }
+
+        public Stream GetStream()
+        {
+            return _br.BaseStream;
         }
 
         private void print(string msg, string data)

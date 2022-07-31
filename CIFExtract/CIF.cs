@@ -22,11 +22,6 @@ namespace CIFExtract
 
         public static void Extract(BetterBinaryReader InStream)
         {
-            //Tool status
-            //Console.WriteLine($"CURRENTLY BROKEN\n");
-            Console.WriteLine($"EXPEREMENTAL\n");
-            //Console.WriteLine($"UNVALIDATED\n");
-
             string header = Helpers.String(InStream.ReadBytes(24)).Trim('\0');
             //Console.WriteLine($"header: {header}");
 
@@ -228,7 +223,13 @@ namespace CIFExtract
                 cif.fileExtension = GetExtension(InStream, cif);
 
                 //null padded
-                InStream.Skip(12);
+                //InStream.Skip(12);
+                cif.width = InStream.ReadInt();
+                cif.height = InStream.ReadInt();
+
+                //1 for ovl and 0 for data?
+                //Helpers.AssertInt(InStream, 1);
+                int type = InStream.ReadInt();
 
                 cif.DecompressedLength = InStream.ReadInt();
                 //cif.CompressedLength = cif.DecompressedLength;

@@ -9,7 +9,7 @@
 9. Danger on Deception Island (PC 2003)		2.1
 10. The Secret of Shadow Ranch (PC 2004)	2.1
 11. Curse of Blackmoor Manor (PC 2004)		2.1
-12. Secret of the Old Clock (PC 2005)		2.2 no known changes except version bump
+12. Secret of the Old Clock (PC 2005)		2.2 tga parameters changed
 13. Last Train to Blue Moon Canyon (PC 2005)2.2
 14. Danger By Design (PC 2006)				2.2
 15. The Creature of Kapu Cave (PC 2006)		2.2

@@ -9,9 +9,14 @@ namespace CIFExtract
         //TODO: cal files
         private static void Main(string[] args)
         {
+            //Tool status
+            //Console.WriteLine($"CURRENTLY BROKEN\n");
+            Console.WriteLine($"EXPEREMENTAL\n");
+            //Console.WriteLine($"UNVALIDATED\n");
+
             if (args.Length < 1)
             {
-                Console.WriteLine($"Usage is CIFExtract.exe filename");
+                Console.WriteLine("Usage is CIFExtract.exe filename.");
                 return;
             }
 
