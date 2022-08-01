@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "HISExtract": {
+      "commandName": "Project",
+      "commandLineArgs": "Bluegrass_SFX.HIS"
+    }
+  }
+}

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Sapphire_Extract_Helpers;
+using System;
 using System.IO;
 
 namespace CIFPack
@@ -19,21 +20,8 @@ namespace CIFPack
             }
 
             //input validation aka dumb user proofing
-
-            //TODO: replace with tryparseint?
-            int gamenum = Int32.Parse(args[1]);
-
-            if (gamenum == 33)
-            {
-                Console.WriteLine("Midnight in Salem uses Unity. This is not supported.");
-                return;
-            }
-
-            if (gamenum < 0 || gamenum > 32)
-            {
-                Console.WriteLine("Invalid game number. Please enter a number between 0 and 32.");
-                return;
-            }
+            //If invalid, helper will terminate program with message.
+            int gamenum = Helpers.ValidateGameNum(args[1]);
 
             string FileName = args[0];
 

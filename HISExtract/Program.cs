@@ -19,6 +19,7 @@ namespace HISExtract
                 return;
             }
 
+            //TODO: add batch folder support
             string FileName = args[0];
 
             if (!File.Exists(FileName))

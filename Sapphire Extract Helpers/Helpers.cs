@@ -219,5 +219,25 @@ namespace Sapphire_Extract_Helpers
             // If we got here, equal
             return true;
         }
+
+        public static int ValidateGameNum(string argnum)
+        {
+            //TODO: replace with tryparseint?
+            int gamenum = Int32.Parse(argnum);
+
+            if (gamenum == 33)
+            {
+                Console.WriteLine("Midnight in Salem uses Unity. This is not supported.");
+                Environment.Exit(20);
+            }
+
+            if (gamenum < 0 || gamenum > 32)
+            {
+                Console.WriteLine("Invalid game number. Please enter a number between 0 and 32.");
+                Environment.Exit(20);
+            }
+
+            return gamenum;
+        }
     }
 }

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31911.196
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32721.290
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CIFExtract", "CIFExtract\CIFExtract.csproj", "{3813EBD0-966E-4999-A7B5-A9F5828B2399}"
 EndProject
@@ -17,7 +17,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HIFFDecompile", "HIFFDecomp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HIFFCompile", "HIFFCompile\HIFFCompile.csproj", "{C49E1FD3-99DD-4B4F-B67B-748A40820456}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HISExtract", "HISExtract\HISExtract.csproj", "{97C123CE-87A3-4FE2-B19B-34D2AA7F2084}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HISExtract", "HISExtract\HISExtract.csproj", "{97C123CE-87A3-4FE2-B19B-34D2AA7F2084}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HISPack", "HISPack\HISPack.csproj", "{C7F3C971-D137-4340-9F77-AA0478F08512}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AVFPack", "AVFPack\AVFPack.csproj", "{33B60D13-3C1A-4E39-B0D2-457D10E301B0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AVFExtract", "AVFExtract\AVFExtract.csproj", "{8FC5BD48-15FD-494E-822F-8C9B2C940AF3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,6 +63,18 @@ Global
 		{97C123CE-87A3-4FE2-B19B-34D2AA7F2084}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{97C123CE-87A3-4FE2-B19B-34D2AA7F2084}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{97C123CE-87A3-4FE2-B19B-34D2AA7F2084}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7F3C971-D137-4340-9F77-AA0478F08512}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7F3C971-D137-4340-9F77-AA0478F08512}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7F3C971-D137-4340-9F77-AA0478F08512}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7F3C971-D137-4340-9F77-AA0478F08512}.Release|Any CPU.Build.0 = Release|Any CPU
+		{33B60D13-3C1A-4E39-B0D2-457D10E301B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33B60D13-3C1A-4E39-B0D2-457D10E301B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33B60D13-3C1A-4E39-B0D2-457D10E301B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33B60D13-3C1A-4E39-B0D2-457D10E301B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8FC5BD48-15FD-494E-822F-8C9B2C940AF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8FC5BD48-15FD-494E-822F-8C9B2C940AF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8FC5BD48-15FD-494E-822F-8C9B2C940AF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8FC5BD48-15FD-494E-822F-8C9B2C940AF3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
