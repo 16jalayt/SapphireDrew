@@ -1,7 +1,9 @@
 ﻿using Sapphire_Extract_Helpers;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace AVFExtract
@@ -12,8 +14,8 @@ namespace AVFExtract
         {
             //Tool status
             //Console.WriteLine("EXPEREMENTAL\n");
-            //Console.WriteLine("UNVALIDATED\n");
-            Console.WriteLine("CURRENTLY BROKEN\n");
+            Console.WriteLine("UNVALIDATED\n");
+            //Console.WriteLine("CURRENTLY BROKEN\n");
 
             if (args.Length < 1)
             {
@@ -52,6 +54,8 @@ namespace AVFExtract
             Helpers.AssertInt(InStream, 16912);
             Helpers.AssertShort(InStream, 512);
 
+            string[] frameName;
+
             for (int i = 0; i < numEntries; i++)
             {
                 short frameNo = InStream.ReadShort("\r\rframeNo: ");
@@ -73,6 +77,18 @@ namespace AVFExtract
                 //possibly wrong colorspace but simple and same final as old extractor?
                 //Thought was rgb565 works as bgra5551
                 var image = Image.LoadPixelData<Bgra5551>(outData, width, height);
+                var encd = new PngEncoder
+                {
+                    ColorType = PngColorType.Rgb
+                    //TransparentColorMode = PngTransparentColorMode.Clear
+                };
+
+                /*float threshold = 0.1F;
+                Color sourceColor = Color.White;
+                Color targetColor = Color.Transparent;
+                RecolorBrush brush2 = new RecolorBrush(sourceColor, targetColor, threshold);
+
+                image.Mutate(i => i.Clear(brush2));*/
                 //png doesn't work. due to pixelformat? bmp and jpg work
                 //Now lower in function
                 //image.Save("barbasic.bmp");
@@ -143,15 +159,62 @@ namespace AVFExtract
                 {
                     //TODO issue with pwd. should specify path everywhere
                     Directory.CreateDirectory(InStream.FileNameWithoutExtension);
-                    image.Save($"{InStream.FileNameWithoutExtension}\\{frameNo}.bmp");
+                    image.Save($"{InStream.FileNameWithoutExtension}\\{frameNo}.png", encd);
                 }
                 else
                 {
-                    image.Save($"{InStream.FileNameWithoutExtension}.bmp");
+                    image.Save($"{InStream.FileNameWithoutExtension}.png", encd);
                 }
 
                 InStream.Seek(placeholder);
             }
+
+            //if multiple frames create a subfolder
+            if (numEntries > 1)
+            {
+                Console.WriteLine("\n\nConverting AVF png frames to mp4. The console will lockup durring this process.");
+                Console.WriteLine(ExecuteFFMpeg($"-hide_banner -y -i {InStream.FileNameWithoutExtension}\\%d.png -r 15 {InStream.FileNameWithoutExtension}\\{InStream.FileNameWithoutExtension}.mp4"));
+                Console.WriteLine("Done.");
+
+                //FFMpegHelper.VerifyFFMpegExists(new FFOptions());
+
+                //IEnumerable<string> screenshotPaths = Directory.GetFiles(InStream.FileNameWithoutExtension).Select(p => Path.GetFullPath(p));
+                //IEnumerable<ImageInfo> imageSequence = screenshotPaths.Select(path => ImageInfo.FromPath(path));
+                //only works with png?
+                //FFMpeg.JoinImageSequence($"{InStream.FileNameWithoutExtension}\\{InStream.FileNameWithoutExtension}2.mp4", frameRate: 15, imageSequence.ToArray());
+
+                /*FFMpegArguments
+                    .FromFileInput($"{InStream.FileNameWithoutExtension}\\%d.png")
+                       //.FromFileInput("C:\\Users\\16jal\\source\\repos\\SapphireDrew\\AVFExtract\\bin\\Debug\\net6.0\\CEM_TombStairs_ANIM\\0.bmp")
+                       .OutputToFile($"{InStream.FileNameWithoutExtension}\\{InStream.FileNameWithoutExtension}.mp4", true, options => options
+                       .WithVideoCodec(VideoCodec.LibX264)
+                       .WithConstantRateFactor(21)
+                       .WithAudioCodec(AudioCodec.Aac)
+                       .WithVariableBitrate(4)
+                       .WithFastStart()
+                       .WithFramerate(15))
+                       .ProcessSynchronously();*/
+            }
+        }
+
+        private static string ExecuteFFMpeg(string parameters)
+        {
+            string result = String.Empty;
+
+            using (Process p = new Process())
+            {
+                p.StartInfo.UseShellExecute = false;
+                p.StartInfo.CreateNoWindow = true;
+                p.StartInfo.RedirectStandardOutput = true;
+                p.StartInfo.FileName = "ffmpeg.exe";
+                p.StartInfo.Arguments = parameters;
+                p.Start();
+                p.WaitForExit();
+
+                result = p.StandardOutput.ReadToEnd();
+            }
+
+            return result;
         }
     }
 }
