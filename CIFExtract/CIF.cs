@@ -252,6 +252,9 @@ namespace CIFExtract
                 {
                     if (verMajor == 2 && verMinor < 3)
                     {
+                        //var image = SixLabors.ImageSharp.Image.LoadPixelData(cif.contents, cif.width, cif.height);
+                        //image.Save($"{InStream.FileNameWithoutExtension}\\{cif.fileName}.bmp");
+
                         MemoryStream stream = new MemoryStream();
                         using (BinaryWriter writer = new BinaryWriter(stream))
                         {
