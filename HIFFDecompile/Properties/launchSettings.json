@@ -2,7 +2,7 @@
   "profiles": {
     "HIFFDecompile": {
       "commandName": "Project",
-      "commandLineArgs": "boot.hiff -v"
+      "commandLineArgs": "S3511.hiff -v"
     }
   }
 }

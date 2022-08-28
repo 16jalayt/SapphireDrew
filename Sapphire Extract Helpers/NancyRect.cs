@@ -15,7 +15,7 @@
             this.p2y = p2y;
         }
 
-        public NancyRect(BetterBinaryReader InStream, bool BigEndian = true)
+        public NancyRect(BetterBinaryReader InStream, bool BigEndian = false)
         {
             if (BigEndian)
             {

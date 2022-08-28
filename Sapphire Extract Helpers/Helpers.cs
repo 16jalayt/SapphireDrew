@@ -4,7 +4,7 @@ namespace Sapphire_Extract_Helpers
 {
     public static class Helpers
     {
-        //public static bool Raw;
+        public static bool Raw;
 
         //TODO: pass multiple possible values. Helper to itter and check returns?
         //TODO: better debug messages(pass guessed value to print?)
@@ -177,10 +177,10 @@ namespace Sapphire_Extract_Helpers
             Writer.AutoRename = val;
         }
 
-        /*public static void setRaw(bool val)
+        public static void setRaw(bool val)
         {
             Raw = val;
-        }*/
+        }
 
         public static string Hex(byte[] inArray)
         {

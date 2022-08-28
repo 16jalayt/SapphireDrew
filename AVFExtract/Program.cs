@@ -42,8 +42,11 @@ namespace AVFExtract
                 return;
             }
 
-            //Unknown. probably wrong sizing. 6 bytes
-            Helpers.AssertInt(InStream, 512);
+            //Version 2.0
+            Helpers.AssertShort(InStream, 2, false);
+            Helpers.AssertShort(InStream, 0, false);
+
+            //Unknown. 2 bytes
             Helpers.AssertShort(InStream, 0);
 
             short numEntries = InStream.ReadShort("numEntries: ");
@@ -52,7 +55,9 @@ namespace AVFExtract
 
             //Unknown. probably wrong sizing. 6 bytes
             Helpers.AssertInt(InStream, 16912);
-            Helpers.AssertShort(InStream, 512);
+
+            //Compression Type
+            Helpers.AssertShortBE(InStream, 2);
 
             string[] frameName;
 

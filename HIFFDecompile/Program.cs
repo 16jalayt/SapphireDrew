@@ -4,11 +4,16 @@ using System.IO;
 
 namespace HIFFDecompile
 {
-    /*Notes: int might be short and long as int.
-     * All the leaked sources are for bonusmsg
+    /*Notes: int is short and long is int. no short. byte is byte
+     * MIXED ENDIANNESS
+     * Most the leaked sources are for bonusmsg
      * Chunk Length because need length for c copy funcs.
      * Copy chunks to memory to read?
      * Load chunks out of order?
+     *
+     * In all but use and tsum, first byte after description
+     * is what the engine looks at when determining chunk type
+     * NOT description string. Nex byte is (usually) trigger type
      * */
 
     internal class Program
@@ -41,8 +46,10 @@ namespace HIFFDecompile
             }
             BetterBinaryReader InStream = new BetterBinaryReader(FileName);
 
-            if (args[1] == "-v")
+            if (args.Length > 1 && args[1] == "-v")
                 InStream.debugprint = true;
+
+            Console.WriteLine($"Printout of: '{FileName}'\n");
 
             DecompChunk(InStream);
         }
@@ -81,6 +88,7 @@ namespace HIFFDecompile
                             break;
 
                         case "SCEN":
+                            //Terse Summeray
                             Helpers.AssertString(InStream, "TSUM");
                             Scentsum(InStream);
                             break;
@@ -138,17 +146,31 @@ namespace HIFFDecompile
 
             int ChunkLength = InStream.ReadIntBE("Chunk Length: ");
 
-            //Probably some other scene parameters. Not tested yet.
-            //name?
-            InStream.Skip(50);
+            //Scene Description
+            //char[50]  "Scene description" in src
+            string SceneDesc = Helpers.String(InStream.ReadBytes(50)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine("SceneDesc: " + SceneDesc); }
 
             //The name of the scene background.
             //Same length as file name field in cifftree?
-            string Bk = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
-            if (InStream.debugprint) { Console.WriteLine("BK: " + Bk); }
+            string RefAVF = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine("RefAVF: " + RefAVF); }
 
-            //Probably some other scene parameters. Not tested yet.
-            InStream.Skip(43);
+            //The name of the scene zone? Seems to be autogened prefix.
+            //Same length as file name field in cifftree?
+            string RefSound = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine("RefSound: " + RefSound); }
+
+            //Scene specific sound channel
+            short sceneChan = InStream.ReadShort("Chan: ");
+
+            //Loop. 0 infinite
+            int loop = InStream.ReadInt("loop: ");
+
+            //Unknown. Audio levels?
+            short chan1 = InStream.ReadShort("chan1: ");
+            short chan2 = InStream.ReadShort("chan2: ");
+
             if (InStream.debugprint) { Console.WriteLine("---END Scentsum---\n"); }
         }
 
@@ -241,7 +263,11 @@ namespace HIFFDecompile
                     break;
 
                 case "Scene Change":
-                    Act_go(InStream);
+                    Act_SC(InStream, false);
+                    break;
+
+                case "Scene Change with Hotspot":
+                    Act_SC(InStream, true);
                     break;
 
                 default:
@@ -314,11 +340,11 @@ namespace HIFFDecompile
             Helpers.AssertShortBE(InStream, 1);
 
             //graphic on img
-            NancyRect src = new NancyRect(InStream);
+            NancyRect src = new NancyRect(InStream, true);
             if (InStream.debugprint) { Console.WriteLine("src: " + src); }
             //graphic on screen
-            NancyRect dest = new NancyRect(InStream);
-            if (InStream.debugprint) { Console.WriteLine("derst: " + dest); }
+            NancyRect dest = new NancyRect(InStream, true);
+            if (InStream.debugprint) { Console.WriteLine("dest: " + dest); }
 
             //Does this do anything?
             Helpers.AssertIntBE(InStream, 0);
@@ -329,6 +355,7 @@ namespace HIFFDecompile
             if (InStream.debugprint) { Console.WriteLine("   ---END SOVL---"); }
         }
 
+        //TODO: incorrrect?
         private static void Act_HS(BetterBinaryReader InStream)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---HS---"); }
@@ -397,22 +424,29 @@ namespace HIFFDecompile
 
             //LITTLE ENDIAN
             //y has 65 added?
-            NancyRect pos = new NancyRect(InStream, false);
+            NancyRect pos = new NancyRect(InStream);
             if (InStream.debugprint) { Console.WriteLine("pos: " + pos); }
 
             if (InStream.debugprint) { Console.WriteLine("   ---END HS---"); }
         }
 
         //Conditionally change scene.
-        private static void Act_go(BetterBinaryReader InStream)
+        private static void Act_SC(BetterBinaryReader InStream, bool withHS)
         {
-            if (InStream.debugprint) { Console.WriteLine($"---GO {InStream.Position()}---"); }
+            if (withHS)
+            {
+                if (InStream.debugprint) { Console.WriteLine($"---GO WITH HOT {InStream.Position()}---"); }
+            }
+            else
+                if (InStream.debugprint) { Console.WriteLine($"---GO {InStream.Position()}---"); }
 
-            //NO CHUNK LENGTH?
-            //int ChunkLength = InStream.ReadIntBE("Chunk Length: ");
-            Helpers.AssertShortBE(InStream, 3841);
+            //Type of HS
+            //AT_SCENE_FRAME_HS = 19
+            byte HSType = InStream.ReadByte("HSType: ");
 
-            //short unknown = InStream.ReadShort("Unknown: ");
+            //AE_SINGLE_EXEC = 1
+            //AE_MULTI_EXEC	= 2
+            byte HSExec = InStream.ReadByte("HSExec: ");
 
             //number of dependencies
             //LITTLE Endian
@@ -440,27 +474,44 @@ namespace HIFFDecompile
                 if (InStream.debugprint) { Console.WriteLine("    ---End Ref---"); }
             }
 
+            //len32
             Helpers.AssertString(InStream, "EndOfDeps", true);
             //Assert only compares provided string length. Need to skip rest of field.
             InStream.Skip(23);
 
             short sceneNumber = InStream.ReadShort("Switch to: ");
 
-            if (InStream.debugprint) { Console.WriteLine("---END GO---\n"); }
+            if (withHS)
+            {
+                int frame = InStream.ReadInt("Frame: ");
+                //FORWARD_CURSOR = 12
+                //UTURN_CURSOR = 19
+                int cursor = InStream.ReadInt("Cursor: ");
+
+                //Hotzone position
+                NancyRect pos = new NancyRect(InStream);
+                if (InStream.debugprint) { Console.WriteLine(pos); }
+            }
+
+            if (InStream.debugprint) { Console.WriteLine("---END SC---\n"); }
         }
 
         //Use seems to be an import/func call
         private static void Use(BetterBinaryReader InStream)
         {
-            if (InStream.debugprint) { Console.WriteLine($"---USE {InStream.Position()}---"); }
+            if (InStream.debugprint) { Console.WriteLine($"--USE {InStream.Position()}---"); }
 
             int ChunkLength = InStream.ReadIntBE("Chunk Length: ");
 
-            //Don't know what this does. In "use bk" it is 256
-            Helpers.AssertShortBE(InStream, 256);
+            //num refs
+            short NumRefs = InStream.ReadShort("Num refs: ");
 
-            string name = Helpers.String(InStream.ReadBytes(34)).TrimEnd('\0');
-            if (InStream.debugprint) { Console.WriteLine(name); }
+            for (int i = 0; i < NumRefs; i++)
+            {
+                //Wierd length?
+                string name = Helpers.String(InStream.ReadBytes(34)).TrimEnd('\0');
+                if (InStream.debugprint) { Console.WriteLine("   -" + name); }
+            }
 
             if (InStream.debugprint) { Console.WriteLine("---END USE---\n"); }
         }
