@@ -19,6 +19,10 @@ namespace HIFFDecompile.Chunks
                     SOVL(InStream);
                     break;
 
+                case "Event Flags":
+                    HS(InStream);
+                    break;
+
                 case "Event Flags with Cursor and HS":
                     HS(InStream);
                     break;
@@ -37,6 +41,22 @@ namespace HIFFDecompile.Chunks
 
                 case "Sound":
                     Sound(InStream);
+                    break;
+
+                case "Set_Volume":
+                    SetVolume(InStream);
+                    break;
+
+                case "Save a Continue Game":
+                    SaveContinue(InStream);
+                    break;
+
+                case "Set Value":
+                    SetValue(InStream);
+                    break;
+
+                case "Set Value Combo":
+                    SetValueCombo(InStream);
                     break;
 
                 default:
@@ -67,35 +87,7 @@ namespace HIFFDecompile.Chunks
 
             //Not entirely sure what the bit widths are supposed to be
 
-            //number of dependencies
-            //LITTLE Endian
-            int numDeps = InStream.ReadInt("Num deps: ");
-            if (InStream.debugprint) { Console.WriteLine("    ---Ref---"); }
-
-            for (int i = 0; i < numDeps; i++)
-            {
-                //type of RefDep
-                byte depType = InStream.ReadByte("Dep type: ");
-
-                //unknown 0. I don't think belongs to another field.
-                Helpers.AssertByte(InStream, 0);
-
-                //type of RefFlag
-                short depRefFlag = InStream.ReadShort("Dep ref: ");
-
-                //TODO: more here, need different dependency to test
-                //All Shorts?
-                //InStream.Skip(12);
-                short depState = InStream.ReadShort("Dep state: ");
-                short depFlag = InStream.ReadShort("Dep flag: ");
-                NancyRect rect = new NancyRect(InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort());
-                if (InStream.debugprint) { Console.WriteLine(rect); }
-                if (InStream.debugprint) { Console.WriteLine("    ---End Ref---"); }
-            }
-
-            Helpers.AssertString(InStream, "EndOfDeps", true);
-            //Assert only compares provided string length. Need to skip rest of field.
-            InStream.Skip(23);
+            Utils.ParseDeps(InStream);
 
             //Typeof: RefOvlStat
             string name = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
@@ -124,12 +116,11 @@ namespace HIFFDecompile.Chunks
             if (InStream.debugprint) { Console.WriteLine("   ---END SOVL---"); }
         }
 
-        //TODO: incorrrect?
         private static void HS(BetterBinaryReader InStream)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---HS---"); }
 
-            //TODO: convert to enum
+            //AT_FLAGS = 90, AT_FLAGS_HS = 91
             byte type = InStream.ReadByte("Type: ");
             //Once or multiple
             byte trigger = InStream.ReadByte("Trigger: ");
@@ -145,36 +136,7 @@ namespace HIFFDecompile.Chunks
 
             //Not entirely sure what the bit widths are supposed to be
 
-            //number of dependencies
-            //LITTLE Endian
-            int numDeps = InStream.ReadInt("Num deps: ");
-            if (InStream.debugprint) { Console.WriteLine("    ---Ref---"); }
-
-            for (int i = 0; i < numDeps; i++)
-            {
-                //type of RefDep
-                byte depType = InStream.ReadByte("Dep type: ");
-
-                //unknown 0. I don't think belongs to another field.
-                Helpers.AssertByte(InStream, 0);
-
-                //type of RefFlag
-                short depRefFlag = InStream.ReadShort("Dep ref: ");
-
-                //TODO: more here, need different dependency to test
-                //All Shorts?
-                //InStream.Skip(12);
-                short depState = InStream.ReadShort("Dep state: ");
-                short depFlag = InStream.ReadShort("Dep flag: ");
-                NancyRect rect = new NancyRect(InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort());
-                if (InStream.debugprint) { Console.WriteLine(rect); }
-                if (InStream.debugprint) { Console.WriteLine("    ---End Ref---"); }
-            }
-
-            Helpers.AssertString(InStream, "EndOfDeps", true);
-            //Assert only compares provided string length. Need to skip rest of field.
-            InStream.Skip(23);
-            //////////////above is standard?
+            Utils.ParseDeps(InStream);
 
             //Number of variables to set by Hotzone
             short numVars = InStream.ReadShort("Num vars: ");
@@ -185,16 +147,21 @@ namespace HIFFDecompile.Chunks
                 short state = InStream.ReadShort("State: ");
             }
 
-            //Might be enum for whatever field scale is.
-            int unk = InStream.ReadInt("Unknown field: ");
+            //AT_FLAGS_HS
+            if (type == 91)
+            {
+                //Might be enum for whatever field scale is.
+                int unk = InStream.ReadInt("Unknown field: ");
 
-            //Action?
-            int action = InStream.ReadInt("Action: ");
+                //Action?
+                int action = InStream.ReadInt("Action: ");
 
-            //LITTLE ENDIAN
-            //y has 65 added?
-            NancyRect pos = new NancyRect(InStream);
-            if (InStream.debugprint) { Console.WriteLine("pos: " + pos); }
+                //LITTLE ENDIAN
+                //y has 65 added?
+                NancyRect pos = new NancyRect(InStream);
+                if (InStream.debugprint) { Console.WriteLine("pos: " + pos); }
+            }
+            
 
             if (InStream.debugprint) { Console.WriteLine("   ---END HS---"); }
         }
@@ -217,36 +184,7 @@ namespace HIFFDecompile.Chunks
             //AE_MULTI_EXEC	= 2
             byte HSExec = InStream.ReadByte("HSExec: ");
 
-            //number of dependencies
-            //LITTLE Endian
-            int numDeps = InStream.ReadInt("Num deps: ");
-            if (InStream.debugprint) { Console.WriteLine("    ---Ref---"); }
-
-            for (int i = 0; i < numDeps; i++)
-            {
-                //type of RefDep
-                byte depType = InStream.ReadByte("Dep type: ");
-
-                //unknown 0. I don't think belongs to another field.
-                Helpers.AssertByte(InStream, 0);
-
-                //type of RefFlag
-                short depRefFlag = InStream.ReadShort("Dep ref: ");
-
-                //TODO: more here, need different dependency to test
-                //All Shorts?
-                //InStream.Skip(12);
-                short depState = InStream.ReadShort("Dep state: ");
-                short depFlag = InStream.ReadShort("Dep flag: ");
-                NancyRect rect = new NancyRect(InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort());
-                if (InStream.debugprint) { Console.WriteLine(rect); }
-                if (InStream.debugprint) { Console.WriteLine("    ---End Ref---"); }
-            }
-
-            //len32
-            Helpers.AssertString(InStream, "EndOfDeps", true);
-            //Assert only compares provided string length. Need to skip rest of field.
-            InStream.Skip(23);
+            Utils.ParseDeps(InStream);
 
             short sceneNumber = InStream.ReadShort("Switch to: ");
 
@@ -277,36 +215,7 @@ namespace HIFFDecompile.Chunks
 
             //Not entirely sure what the bit widths are supposed to be
 
-            //number of dependencies
-            //LITTLE Endian
-            int numDeps = InStream.ReadInt("Num deps: ");
-            if (InStream.debugprint) { Console.WriteLine("    ---Ref---"); }
-
-            for (int i = 0; i < numDeps; i++)
-            {
-                //type of RefDep
-                byte depType = InStream.ReadByte("Dep type: ");
-
-                //unknown 0. I don't think belongs to another field.
-                Helpers.AssertByte(InStream, 0);
-
-                //type of RefFlag
-                short depRefFlag = InStream.ReadShort("Dep ref: ");
-
-                //TODO: more here, need different dependency to test
-                //All Shorts?
-                //InStream.Skip(12);
-                short depState = InStream.ReadShort("Dep state: ");
-                short depFlag = InStream.ReadShort("Dep flag: ");
-                NancyRect rect = new NancyRect(InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort());
-                if (InStream.debugprint) { Console.WriteLine(rect); }
-                if (InStream.debugprint) { Console.WriteLine("    ---End Ref---"); }
-            }
-
-            Helpers.AssertString(InStream, "EndOfDeps", true);
-            //Assert only compares provided string length. Need to skip rest of field.
-            InStream.Skip(23);
-            //////////////above is standard?
+            Utils.ParseDeps(InStream);
 
             InStream.Skip(36);
             Console.WriteLine("Fade Out Unimplemented");
@@ -322,36 +231,8 @@ namespace HIFFDecompile.Chunks
             //Once or multiple
             byte trigger = InStream.ReadByte("Trigger: ");
 
-            //number of dependencies
-            //LITTLE Endian
-            int numDeps = InStream.ReadInt("Num deps: ");
-            if (InStream.debugprint) { Console.WriteLine("    ---Ref---"); }
+            Utils.ParseDeps(InStream);
 
-            for (int i = 0; i < numDeps; i++)
-            {
-                //type of RefDep
-                byte depType = InStream.ReadByte("Dep type: ");
-
-                //unknown 0. I don't think belongs to another field.
-                Helpers.AssertByte(InStream, 0);
-
-                //type of RefFlag
-                short depRefFlag = InStream.ReadShort("Dep ref: ");
-
-                //TODO: more here, need different dependency to test
-                //All Shorts?
-                //InStream.Skip(12);
-                short depState = InStream.ReadShort("Dep state: ");
-                short depFlag = InStream.ReadShort("Dep flag: ");
-                NancyRect rect = new NancyRect(InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort());
-                if (InStream.debugprint) { Console.WriteLine(rect); }
-                if (InStream.debugprint) { Console.WriteLine("    ---End Ref---"); }
-            }
-
-            Helpers.AssertString(InStream, "EndOfDeps", true);
-            //Assert only compares provided string length. Need to skip rest of field.
-            InStream.Skip(23);
-            //////////////above is standard?
             if (InStream.debugprint) { Console.WriteLine("    ---RefSound---"); }
 
             short numRefSound = InStream.ReadShort();
@@ -394,5 +275,102 @@ namespace HIFFDecompile.Chunks
             if (InStream.debugprint) { Console.WriteLine("   ---END Sound---"); }
         }
 
+        private static void SetVolume(BetterBinaryReader InStream)
+        {
+            if (InStream.debugprint) { Console.WriteLine("   ---Set Volume---"); }
+
+            //AT_SET_VOLUME = 147
+            byte type = InStream.ReadByte("Type: ");
+            //Once or multiple
+            byte trigger = InStream.ReadByte("Trigger: ");
+
+            Utils.ParseDeps(InStream);
+
+            //SS_SPEC_EFFECT_CHAN1 = 9
+            short channel = InStream.ReadShort("Channel: ");
+
+            int volume = InStream.ReadInt("Volume: ");
+
+            if (InStream.debugprint) { Console.WriteLine("   ---END Set Volume---"); }
+        }
+
+        //Autosave?
+        private static void SaveContinue(BetterBinaryReader InStream)
+        {
+            if (InStream.debugprint) { Console.WriteLine("   ---Save Continue---"); }
+
+            //AT_SAVE_CONTINUE_GAME = 102
+            byte type = InStream.ReadByte("Type: ");
+            //Once or multiple
+            byte trigger = InStream.ReadByte("Trigger: ");
+
+            Utils.ParseDeps(InStream);
+
+            if (InStream.debugprint) { Console.WriteLine("   ---END Save Continue---"); }
+        }
+
+        private static void SetValue(BetterBinaryReader InStream)
+        {
+            if (InStream.debugprint) { Console.WriteLine("   ---Set Value---"); }
+
+            //AT_SET_VALUE = 78
+            byte type = InStream.ReadByte("Type: ");
+            //Once or multiple
+            byte trigger = InStream.ReadByte("Trigger: ");
+
+            Utils.ParseDeps(InStream);
+
+            //TABLE_INDEX20 = 20
+            byte idx = InStream.ReadByte("Idx: ");
+            //ADD_TO_VALUE = 0
+            byte operation = InStream.ReadByte("Operation: ");
+
+            short value = InStream.ReadShort("Value: ");
+
+            //Bytes not in chunk definition
+            InStream.Skip(8);
+            if (InStream.debugprint) { Console.WriteLine("   ---END Set Value---"); }
+        }
+
+        private static void SetValueCombo(BetterBinaryReader InStream)
+        {
+            if (InStream.debugprint) { Console.WriteLine("   ---Set Value Combo---"); }
+
+            //AT_SET_VALUE_COMBO = 78
+            byte type = InStream.ReadByte("Type: ");
+            //Once or multiple
+            byte trigger = InStream.ReadByte("Trigger: ");
+
+            Utils.ParseDeps(InStream);
+
+            //TABLE_INDEX20  = 20
+            byte tableIndex = InStream.ReadByte("Table Index: ");
+
+            //"Values to combine to make new value"
+            //TABLE_INDEX_DAY_COUNT = 255
+            byte tableIndexCount = InStream.ReadByte("Table Index Count: ");
+
+            //weighting
+            short weighting = InStream.ReadShort("Weighting: ");
+
+            if (InStream.debugprint) { Console.WriteLine("    ---Table---"); }
+            //Variable length? no counter
+            //tableIndexCount - 1 / 2 ??
+            for (int i = 0; i < 9; i++)
+            {
+                //NO_TABLE_INDEX = 252
+                byte idx = InStream.ReadByte("Index: ");
+
+                short val = InStream.ReadShort("Value: ");
+            }
+
+            if (InStream.debugprint) { Console.WriteLine("    ---End Table---"); }
+
+            //Padded in test file
+            if (InStream.IsEOF() != true && InStream.ReadByte() != 0)
+                InStream.Skip(-1);
+
+            if (InStream.debugprint) { Console.WriteLine("   ---END Set Value Combo---"); }
+        }
     }
 }
