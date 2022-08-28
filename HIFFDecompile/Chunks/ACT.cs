@@ -1,9 +1,5 @@
 ﻿using Sapphire_Extract_Helpers;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace HIFFDecompile.Chunks
 {
@@ -33,6 +29,14 @@ namespace HIFFDecompile.Chunks
 
                 case "Scene Change with Hotspot":
                     SC(InStream, true);
+                    break;
+
+                case "Fade Out":
+                    FadeOut(InStream);
+                    break;
+
+                case "Sound":
+                    Sound(InStream);
                     break;
 
                 default:
@@ -260,5 +264,135 @@ namespace HIFFDecompile.Chunks
 
             if (InStream.debugprint) { Console.WriteLine("---END SC---\n"); }
         }
+
+        //Found in Ven
+        private static void FadeOut(BetterBinaryReader InStream)
+        {
+            if (InStream.debugprint) { Console.WriteLine("   ---Fade Out---"); }
+
+            //TODO: convert to enum
+            byte type = InStream.ReadByte("Type: ");
+            //Once or multiple
+            byte trigger = InStream.ReadByte("Trigger: ");
+
+            //Not entirely sure what the bit widths are supposed to be
+
+            //number of dependencies
+            //LITTLE Endian
+            int numDeps = InStream.ReadInt("Num deps: ");
+            if (InStream.debugprint) { Console.WriteLine("    ---Ref---"); }
+
+            for (int i = 0; i < numDeps; i++)
+            {
+                //type of RefDep
+                byte depType = InStream.ReadByte("Dep type: ");
+
+                //unknown 0. I don't think belongs to another field.
+                Helpers.AssertByte(InStream, 0);
+
+                //type of RefFlag
+                short depRefFlag = InStream.ReadShort("Dep ref: ");
+
+                //TODO: more here, need different dependency to test
+                //All Shorts?
+                //InStream.Skip(12);
+                short depState = InStream.ReadShort("Dep state: ");
+                short depFlag = InStream.ReadShort("Dep flag: ");
+                NancyRect rect = new NancyRect(InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort());
+                if (InStream.debugprint) { Console.WriteLine(rect); }
+                if (InStream.debugprint) { Console.WriteLine("    ---End Ref---"); }
+            }
+
+            Helpers.AssertString(InStream, "EndOfDeps", true);
+            //Assert only compares provided string length. Need to skip rest of field.
+            InStream.Skip(23);
+            //////////////above is standard?
+
+            InStream.Skip(36);
+            Console.WriteLine("Fade Out Unimplemented");
+
+            if (InStream.debugprint) { Console.WriteLine("   ---END Fade Out---"); }
+        }
+        private static void Sound(BetterBinaryReader InStream)
+        {
+            if (InStream.debugprint) { Console.WriteLine("   ---Sound---"); }
+
+            //AT_START_SOUND = 145
+            byte type = InStream.ReadByte("Type: ");
+            //Once or multiple
+            byte trigger = InStream.ReadByte("Trigger: ");
+
+            //number of dependencies
+            //LITTLE Endian
+            int numDeps = InStream.ReadInt("Num deps: ");
+            if (InStream.debugprint) { Console.WriteLine("    ---Ref---"); }
+
+            for (int i = 0; i < numDeps; i++)
+            {
+                //type of RefDep
+                byte depType = InStream.ReadByte("Dep type: ");
+
+                //unknown 0. I don't think belongs to another field.
+                Helpers.AssertByte(InStream, 0);
+
+                //type of RefFlag
+                short depRefFlag = InStream.ReadShort("Dep ref: ");
+
+                //TODO: more here, need different dependency to test
+                //All Shorts?
+                //InStream.Skip(12);
+                short depState = InStream.ReadShort("Dep state: ");
+                short depFlag = InStream.ReadShort("Dep flag: ");
+                NancyRect rect = new NancyRect(InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort());
+                if (InStream.debugprint) { Console.WriteLine(rect); }
+                if (InStream.debugprint) { Console.WriteLine("    ---End Ref---"); }
+            }
+
+            Helpers.AssertString(InStream, "EndOfDeps", true);
+            //Assert only compares provided string length. Need to skip rest of field.
+            InStream.Skip(23);
+            //////////////above is standard?
+            if (InStream.debugprint) { Console.WriteLine("    ---RefSound---"); }
+
+            short numRefSound = InStream.ReadShort();
+            for(int i = 0; i < numRefSound; i++)
+            {
+                string RefSound = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
+                if (InStream.debugprint) { Console.WriteLine("Dep Name: "+RefSound); }
+            }
+            if (InStream.debugprint) { Console.WriteLine("    ---End RefSound---"); }
+
+            //SS_SPEC_EFFECT_CHAN1 = 9
+            short chan = InStream.ReadShort("Channel: ");
+
+            //LOOP_ONCE = 1
+            int loop = InStream.ReadInt("Loop: ");
+
+            //Unknown
+            short unknown = InStream.ReadShort("Unknown: ");
+
+            //next scene before sound ends
+            byte nextScene = InStream.ReadByte("Next Scene: ");
+
+            //Referenced scene
+            short refScene = InStream.ReadShort("Referenced Scene: ");
+
+            //CCTEXT_TYPE_AUTO = 0
+            byte textType = InStream.ReadByte("TextType: ");
+
+            //when sound happens
+            short numRefSetFlags = InStream.ReadShort("numRefSetFlags: ");
+
+            short RefSetFlag = InStream.ReadShort("Ref set: ");
+
+            short unknownBool = InStream.ReadShort("Bool: ");
+
+            //Padded in test file
+            if (InStream.IsEOF() != true && InStream.ReadByte() != 0)
+                InStream.Skip(-1);
+
+            if (InStream.debugprint) { Console.WriteLine("   ---END Sound---"); }
+        }
+
     }
 }

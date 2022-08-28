@@ -251,10 +251,13 @@ namespace HIFFDecompile
 
             for (int i = 0; i < NumRefs; i++)
             {
-                //Wierd length?
-                string name = Helpers.String(InStream.ReadBytes(34)).TrimEnd('\0');
+                string name = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
                 if (InStream.debugprint) { Console.WriteLine("   -" + name); }
             }
+
+            //might be byte aligned
+            if (InStream.IsEOF() != true && InStream.ReadByte() != 0)
+                InStream.Skip(-1);
 
             if (InStream.debugprint) { Console.WriteLine("---END USE---\n"); }
         }
