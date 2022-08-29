@@ -28,14 +28,18 @@ namespace HIFFDecompile.Chunks
                     break;
 
                 case "Scene Change":
-                    SC(InStream, false);
+                    SC(InStream);
                     break;
 
                 case "Scene Change with Hotspot":
-                    SC(InStream, true);
+                    SC(InStream);
                     break;
 
-                case "Fade Out":
+                case "Scene Change with Frame":
+                    SC(InStream);
+                    break;
+
+                case "Fade":
                     FadeOut(InStream);
                     break;
 
@@ -57,6 +61,9 @@ namespace HIFFDecompile.Chunks
 
                 case "Set Value Combo":
                     SetValueCombo(InStream);
+                    break;
+                case "Special Effect Action Record":
+                    SpecialEffect(InStream);
                     break;
 
                 default:
@@ -161,34 +168,42 @@ namespace HIFFDecompile.Chunks
                 NancyRect pos = new NancyRect(InStream);
                 if (InStream.debugprint) { Console.WriteLine("pos: " + pos); }
             }
-            
+
 
             if (InStream.debugprint) { Console.WriteLine("   ---END HS---"); }
         }
 
         //Conditionally change scene.
-        private static void SC(BetterBinaryReader InStream, bool withHS)
+        private static void SC(BetterBinaryReader InStream)
         {
-            if (withHS)
-            {
-                if (InStream.debugprint) { Console.WriteLine($"---GO WITH HOT {InStream.Position()}---"); }
-            }
-            else
-                if (InStream.debugprint) { Console.WriteLine($"---GO {InStream.Position()}---"); }
 
             //Type of HS
-            //AT_SCENE_FRAME_HS = 19
+            //AT_SCENE_FRAME_HS = 19, AT_SCENE_FRAME = 16, noral change = 15
             byte HSType = InStream.ReadByte("HSType: ");
 
             //AE_SINGLE_EXEC = 1
             //AE_MULTI_EXEC	= 2
             byte HSExec = InStream.ReadByte("HSExec: ");
 
+            if (HSType == 19)
+            {
+                if (InStream.debugprint) { Console.WriteLine($"---Scnene Change with hot {InStream.Position()}---"); }
+            }
+            else if (HSType == 15)
+            {
+                if (InStream.debugprint) { Console.WriteLine($"---Scnene Change {InStream.Position()}---"); }
+            }
+            else if (HSType == 16)
+            {
+                if (InStream.debugprint) { Console.WriteLine($"---Scnene Change with frame {InStream.Position()}---"); }
+            }
+
+
             Utils.ParseDeps(InStream);
 
             short sceneNumber = InStream.ReadShort("Switch to: ");
 
-            if (withHS)
+            if (HSType == 19)
             {
                 int frame = InStream.ReadInt("Frame: ");
                 //FORWARD_CURSOR = 12
@@ -198,6 +213,10 @@ namespace HIFFDecompile.Chunks
                 //Hotzone position
                 NancyRect pos = new NancyRect(InStream);
                 if (InStream.debugprint) { Console.WriteLine(pos); }
+            }
+            else if (HSType == 16)
+            {
+                int frame = InStream.ReadInt("Frame: ");
             }
 
             if (InStream.debugprint) { Console.WriteLine("---END SC---\n"); }
@@ -236,10 +255,10 @@ namespace HIFFDecompile.Chunks
             if (InStream.debugprint) { Console.WriteLine("    ---RefSound---"); }
 
             short numRefSound = InStream.ReadShort();
-            for(int i = 0; i < numRefSound; i++)
+            for (int i = 0; i < numRefSound; i++)
             {
                 string RefSound = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
-                if (InStream.debugprint) { Console.WriteLine("Dep Name: "+RefSound); }
+                if (InStream.debugprint) { Console.WriteLine("Dep Name: " + RefSound); }
             }
             if (InStream.debugprint) { Console.WriteLine("    ---End RefSound---"); }
 
@@ -327,8 +346,6 @@ namespace HIFFDecompile.Chunks
 
             short value = InStream.ReadShort("Value: ");
 
-            //Bytes not in chunk definition
-            InStream.Skip(8);
             if (InStream.debugprint) { Console.WriteLine("   ---END Set Value---"); }
         }
 
@@ -371,6 +388,29 @@ namespace HIFFDecompile.Chunks
                 InStream.Skip(-1);
 
             if (InStream.debugprint) { Console.WriteLine("   ---END Set Value Combo---"); }
+        }
+
+        private static void SpecialEffect(BetterBinaryReader InStream)
+        {
+            if (InStream.debugprint) { Console.WriteLine("   ---Special Effect---"); }
+
+            //AT_SET_VALUE = 78
+            byte type = InStream.ReadByte("Type: ");
+            //Once or multiple
+            byte trigger = InStream.ReadByte("Trigger: ");
+
+            Utils.ParseDeps(InStream);
+
+            //"MS for each fade"
+            int fadeTIme = InStream.ReadInt("Fade MS: ");
+            //"MS to hold on middle color"
+            int middle = InStream.ReadInt("Middle time: ");
+
+            //"Color to fade through (X, R, G, B)"
+            NancyRect color = new NancyRect(InStream.ReadByte(), InStream.ReadByte(), InStream.ReadByte(), InStream.ReadByte());
+            if (InStream.debugprint) { Console.WriteLine("Color: " + color); }
+
+            if (InStream.debugprint) { Console.WriteLine("   ---END Special Effect---"); }
         }
     }
 }
