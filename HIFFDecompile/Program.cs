@@ -14,7 +14,10 @@ namespace HIFFDecompile
      *
      * In all but use and tsum, first byte after description
      * is what the engine looks at when determining chunk type
-     * NOT description string. Nex byte is (usually) trigger type
+     * NOT description string. Next byte is (usually) trigger type
+
+	 * Either ssum or tsum required and handled outside selection tree
+	 * ssum and tsum checked against string
      * */
 
     internal class Program
@@ -83,7 +86,12 @@ namespace HIFFDecompile
                             break;
 
                         case "SCEN":
-                            //Terse Summeray
+                            //Can also be SSUM
+
+                            //scen is chunk and tsum or ssum data in chunk
+                            //both should be in same file
+
+                            //Terse Summery
                             Helpers.AssertString(InStream, "TSUM");
                             Scentsum(InStream);
                             break;
@@ -111,7 +119,7 @@ namespace HIFFDecompile
                             break;
                     }
                     break;
-
+                //TODO: null is leading not trailing. This breaks stuff
                 case "ACT\0":
                     ACT.Act(InStream);
                     break;

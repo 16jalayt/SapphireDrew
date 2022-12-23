@@ -1,5 +1,7 @@
 ﻿using Crews.Utility.TgaSharp;
 using Sapphire_Extract_Helpers;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Diagnostics;
 using System.Drawing;
@@ -173,6 +175,7 @@ namespace CIFExtract
                     //Length of final file
                     cif.DecompressedLength = InStream.ReadInt();
                     //Unknown
+                    //TODO: right value. scumm says compression=2 might be wrong spot
                     int unknownlengths = InStream.ReadInt();
                     //Length of file in tree
                     cif.CompressedLength = InStream.ReadInt();
@@ -252,8 +255,17 @@ namespace CIFExtract
                 {
                     if (verMajor == 2 && verMinor < 3)
                     {
-                        //var image = SixLabors.ImageSharp.Image.LoadPixelData(cif.contents, cif.width, cif.height);
-                        //image.Save($"{InStream.FileNameWithoutExtension}\\{cif.fileName}.bmp");
+                        //Uncomment to test broken tga
+                        /*if (verMajor == 2 && verMinor == 2)
+                        {
+                            var image = SixLabors.ImageSharp.Image.LoadPixelData<Bgr24>(cif.contents, cif.width, cif.height);
+                            image.Save($"{InStream.FileNameWithoutExtension}\\{cif.fileName}.bmp");
+                        }
+                        else
+                        {
+                            var image = SixLabors.ImageSharp.Image.LoadPixelData<Bgra5551>(cif.contents, cif.width, cif.height);
+                            image.Save($"{InStream.FileNameWithoutExtension}\\{cif.fileName}.bmp");
+                        }*/
 
                         MemoryStream stream = new MemoryStream();
                         using (BinaryWriter writer = new BinaryWriter(stream))
@@ -264,10 +276,14 @@ namespace CIFExtract
                             writer.Write((short)cif.YOrigin);
                             writer.Write((short)cif.width);
                             writer.Write((short)cif.height);
-                            //16bpp
-                            writer.Write((byte)0x10);
-                            //24bpp
-                            //writer.Write((byte)0x19);
+
+                            if (verMajor == 2 && verMinor == 2)
+                                //24bpp
+                                writer.Write((byte)0x18);
+                            else
+                                //16bpp
+                                writer.Write((byte)0x10);
+
                             //one attribute bit. does? without it flips upsidedown
                             writer.Write((byte)0x20);
                             //writer.Write((byte)0b00100001);
@@ -277,9 +293,11 @@ namespace CIFExtract
                     }
 
                     TGA T = new TGA(cif.contents);
+                    //uncomment to test tga before convert to png
+                    //T.Save(InStream.FileNameWithoutExtension + "//" + cif.fileName + ".tga");
                     Bitmap bmp = T.ToBitmap();
                     //Green is transparent in rect. Red means out of rect
-                    bmp.MakeTransparent(Color.FromArgb(0, 255, 0));
+                    bmp.MakeTransparent(System.Drawing.Color.FromArgb(0, 255, 0));
                     using (var stream = new MemoryStream())
                     {
                         //TODO: make portable with imagesharp or other

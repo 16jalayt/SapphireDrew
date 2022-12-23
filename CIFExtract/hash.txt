@@ -1,12 +1,9 @@
-I did see some sort of hash list...
-check mansion
-
 What is being hashed? index in cif
 
 list 0 indexed seems to have numbers at the positions
 only first number in slot. Open probe hashed? no, next number not exist?
 
-scumm cheating:
+After some cheating from scummvm source:
 purpose: to not have to itter entire name table to find chunk.
 
 parse hash ints into array
