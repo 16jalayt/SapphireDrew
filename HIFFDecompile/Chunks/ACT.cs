@@ -1,84 +1,92 @@
 ﻿using Sapphire_Extract_Helpers;
 using System;
+using System.IO;
+using System.Security.AccessControl;
 
 namespace HIFFDecompile.Chunks
 {
     internal static class ACT
     {
         //Act defines a overlay or hotzone
-        public static void Act(BetterBinaryReader InStream)
+        public static void Act(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine($"---ACT {InStream.Position()}---"); }
 
             int ChunkLength = InStream.ReadIntBE("Chunk Length: ");
-            string ActType = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
+            //string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
+            InStream.Skip(48);
+            byte type = InStream.ReadByte("Act type: ");
+            InStream.Skip(-49);
 
-            switch (ActType)
+            switch (type)
             {
-                case "Static Overlay Image":
-                    SOVL(InStream);
+                //AT_OVERLAY
+                case 52:
+                    SOVL(InStream, writetext);
+                    break;
+                //AT_FLAGS or AT_FLAGS_HS
+                case 90:
+                case 91:
+                    HS(InStream, writetext);
+                    break;
+                //AT_SCENE_FRAME_HS = 19, AT_SCENE_FRAME = 16, noral change = 15
+                case 19:
+                case 16:
+                case 15:
+                    SC(InStream, writetext);
                     break;
 
-                case "Event Flags":
-                    HS(InStream);
+                /*case "Fade":
+                    FadeOut(InStream, writetext);
+                    break;*/
+                //AT_START_SOUND
+                case 145:
+                    Sound(InStream, writetext);
                     break;
 
-                case "Event Flags with Cursor and HS":
-                    HS(InStream);
+                //AT_SET_VOLUME
+                case 147:
+                    SetVolume(InStream, writetext);
                     break;
 
-                case "Scene Change":
-                    SC(InStream);
+                //AT_SAVE_CONTINUE_GAME
+                case 102:
+                    SaveContinue(InStream, writetext);
                     break;
 
-                case "Scene Change with Hotspot":
-                    SC(InStream);
+                //TODO:value conflict
+                //AT_SET_VALUE
+                case 78:
+                    SetValue(InStream, writetext);
                     break;
+                //TODO:value conflict
+                //AT_SET_VALUE_COMBO
+                /*case 78:
+                    SetValueCombo(InStream, writetext);
+                    break;*/
 
-                case "Scene Change with Frame":
-                    SC(InStream);
-                    break;
-
-                case "Fade":
-                    FadeOut(InStream);
-                    break;
-
-                case "Sound":
-                    Sound(InStream);
-                    break;
-
-                case "Set_Volume":
-                    SetVolume(InStream);
-                    break;
-
-                case "Save a Continue Game":
-                    SaveContinue(InStream);
-                    break;
-
-                case "Set Value":
-                    SetValue(InStream);
-                    break;
-
-                case "Set Value Combo":
-                    SetValueCombo(InStream);
-                    break;
-                case "Special Effect Action Record":
-                    SpecialEffect(InStream);
-                    break;
+                //TODO:value conflict
+                //AT_SET_VALUE
+                /*case 78:
+                    SpecialEffect(InStream, writetext);
+                    break;*/
 
                 default:
-                    Console.WriteLine($"Unknown act type: '{ActType}'");
+                    Console.WriteLine($"Unknown act type: '{type}'");
                     Utils.FatalError();
                     break;
             }
             if (InStream.debugprint) { Console.WriteLine("---END ACT---\n"); }
         }
 
-        private static void SOVL(BetterBinaryReader InStream)
+        private static void SOVL(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---SOVL---"); }
 
-            //TODO: convert to enum
+            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
+
+            //AT_OVERLAY = 52
             byte type = InStream.ReadByte("Type: ");
             //Once or multiple
             byte trigger = InStream.ReadByte("Trigger: ");
@@ -123,9 +131,12 @@ namespace HIFFDecompile.Chunks
             if (InStream.debugprint) { Console.WriteLine("   ---END SOVL---"); }
         }
 
-        private static void HS(BetterBinaryReader InStream)
+        private static void HS(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---HS---"); }
+
+            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
 
             //AT_FLAGS = 90, AT_FLAGS_HS = 91
             byte type = InStream.ReadByte("Type: ");
@@ -169,21 +180,18 @@ namespace HIFFDecompile.Chunks
                 if (InStream.debugprint) { Console.WriteLine("pos: " + pos); }
             }
 
-
             if (InStream.debugprint) { Console.WriteLine("   ---END HS---"); }
         }
 
         //Conditionally change scene.
-        private static void SC(BetterBinaryReader InStream)
+        private static void SC(BetterBinaryReader InStream, StreamWriter writetext)
         {
+            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
 
             //Type of HS
             //AT_SCENE_FRAME_HS = 19, AT_SCENE_FRAME = 16, noral change = 15
             byte HSType = InStream.ReadByte("HSType: ");
-
-            //AE_SINGLE_EXEC = 1
-            //AE_MULTI_EXEC	= 2
-            byte HSExec = InStream.ReadByte("HSExec: ");
 
             if (HSType == 19)
             {
@@ -198,6 +206,9 @@ namespace HIFFDecompile.Chunks
                 if (InStream.debugprint) { Console.WriteLine($"---Scnene Change with frame {InStream.Position()}---"); }
             }
 
+            //AE_SINGLE_EXEC = 1
+            //AE_MULTI_EXEC	= 2
+            byte HSExec = InStream.ReadByte("HSExec: ");
 
             Utils.ParseDeps(InStream);
 
@@ -223,11 +234,13 @@ namespace HIFFDecompile.Chunks
         }
 
         //Found in Ven
-        private static void FadeOut(BetterBinaryReader InStream)
+        private static void FadeOut(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---Fade Out---"); }
 
-            //TODO: convert to enum
+            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
+
             byte type = InStream.ReadByte("Type: ");
             //Once or multiple
             byte trigger = InStream.ReadByte("Trigger: ");
@@ -241,24 +254,29 @@ namespace HIFFDecompile.Chunks
 
             if (InStream.debugprint) { Console.WriteLine("   ---END Fade Out---"); }
         }
-        private static void Sound(BetterBinaryReader InStream)
+
+        private static void Sound(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---Sound---"); }
+
+            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
 
             //AT_START_SOUND = 145
             byte type = InStream.ReadByte("Type: ");
             //Once or multiple
             byte trigger = InStream.ReadByte("Trigger: ");
 
-            Utils.ParseDeps(InStream);
+            Utils.Dependency[] deps = Utils.ParseDeps(InStream);
 
             if (InStream.debugprint) { Console.WriteLine("    ---RefSound---"); }
 
             short numRefSound = InStream.ReadShort();
+            string[] refSounds = new string[numRefSound];
             for (int i = 0; i < numRefSound; i++)
             {
-                string RefSound = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
-                if (InStream.debugprint) { Console.WriteLine("Dep Name: " + RefSound); }
+                refSounds[i] = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
+                if (InStream.debugprint) { Console.WriteLine("Dep Name: " + refSounds[i]); }
             }
             if (InStream.debugprint) { Console.WriteLine("    ---End RefSound---"); }
 
@@ -282,21 +300,86 @@ namespace HIFFDecompile.Chunks
 
             //when sound happens
             short numRefSetFlags = InStream.ReadShort("numRefSetFlags: ");
+            short[] refSetFlags = new short[numRefSound];
+            short[] RefSetFlagTruths = new short[numRefSound];
+            //TODO:fix formatting
+            for (int i = 0; i < numRefSetFlags; i++)
+            {
+                refSetFlags[i] = InStream.ReadShort("Ref set: ");
 
-            short RefSetFlag = InStream.ReadShort("Ref set: ");
-
-            short unknownBool = InStream.ReadShort("Bool: ");
+                RefSetFlagTruths[i] = InStream.ReadShort("Bool: ");
+            }
 
             //Padded in test file
             if (InStream.IsEOF() != true && InStream.ReadByte() != 0)
                 InStream.Skip(-1);
 
+            //Unknown if shortinable
+            /*if (!Utils.preferLong)
+            {
+                writetext.Write($"sound");
+
+                writetext.Write($"\n");
+            }
+            else
+            {*/
+
+            //TODO:print deps
+            writetext.WriteLine($"CHUNK ACT {{");
+            writetext.WriteLine($"char[48]  \"{ActDesc}\"");
+            writetext.WriteLine($"byte    {Enums.ACT_Type[type]}");
+            writetext.WriteLine($"byte    {Enums.execType[trigger]}");
+            writetext.WriteLine($"BeginCount  RefSound");
+            for (int i = 0; i < numRefSound; i++)
+            {
+                writetext.WriteLine($"RefSound  \"{refSounds[i]}\"");
+            }
+            writetext.WriteLine($"EndCount  RefSound");
+            writetext.WriteLine($"int     {Enums.soundChannel[chan]}");
+            writetext.WriteLine($"long    {Enums.loop[loop]}");
+            writetext.WriteLine($"int     {unknown}");
+            writetext.WriteLine($"byte    {Enums.tf[nextScene]}         // next scene before sound ends?");
+            if (refScene == 9999)
+                writetext.WriteLine($"RefScene  NO_SCENE");
+            else
+                writetext.WriteLine($"RefScene  {refScene}");
+            writetext.WriteLine($"// the name of the text key must match the name of the sound file");
+            writetext.WriteLine($"byte    {Enums.CCTEXT_TYPE[textType]}    // _SCROLL, _SHORT, _NONE");
+            writetext.WriteLine($"BeginCount  RefSetFlag");
+            for (int i = 0; i < numRefSetFlags; i++)
+            {
+                if (refSetFlags[i] == -1)
+                    writetext.WriteLine($"RefSetFlag  EV_NO_EVENT     // when sound begins");
+                else
+                    writetext.WriteLine($"RefSetFlag  {refSetFlags[i]}     // when sound begins");
+
+                writetext.WriteLine($"int     {Enums.tf[RefSetFlagTruths[i]]}");
+            }
+            writetext.WriteLine($"EndCount  RefSetFlag");
+            if (deps.Length > 0)
+            {
+                writetext.WriteLine($"// ------------ Dependency -------------");
+                for (int i = 0; i < deps.Length; i++)
+                {
+                    writetext.WriteLine($"RefDep      {deps[i].depType}");
+                    writetext.WriteLine($"RefFlag   {deps[i].depRefFlag}");
+                    writetext.WriteLine($"int     {Enums.tf[deps[i].depState]}");
+                    writetext.WriteLine($"int     {Enums.depFlag[deps[i].depFlag]}");
+                    writetext.WriteLine($"int     {deps[i].rect.p1x},{deps[i].rect.p1y},{deps[i].rect.p2x},{deps[i].rect.p2y}");
+                }
+            }
+
+            writetext.WriteLine($"}}\n");
+
             if (InStream.debugprint) { Console.WriteLine("   ---END Sound---"); }
         }
 
-        private static void SetVolume(BetterBinaryReader InStream)
+        private static void SetVolume(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---Set Volume---"); }
+
+            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
 
             //AT_SET_VOLUME = 147
             byte type = InStream.ReadByte("Type: ");
@@ -314,9 +397,12 @@ namespace HIFFDecompile.Chunks
         }
 
         //Autosave?
-        private static void SaveContinue(BetterBinaryReader InStream)
+        private static void SaveContinue(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---Save Continue---"); }
+
+            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
 
             //AT_SAVE_CONTINUE_GAME = 102
             byte type = InStream.ReadByte("Type: ");
@@ -328,9 +414,12 @@ namespace HIFFDecompile.Chunks
             if (InStream.debugprint) { Console.WriteLine("   ---END Save Continue---"); }
         }
 
-        private static void SetValue(BetterBinaryReader InStream)
+        private static void SetValue(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---Set Value---"); }
+
+            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
 
             //AT_SET_VALUE = 78
             byte type = InStream.ReadByte("Type: ");
@@ -349,9 +438,12 @@ namespace HIFFDecompile.Chunks
             if (InStream.debugprint) { Console.WriteLine("   ---END Set Value---"); }
         }
 
-        private static void SetValueCombo(BetterBinaryReader InStream)
+        private static void SetValueCombo(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---Set Value Combo---"); }
+
+            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
 
             //AT_SET_VALUE_COMBO = 78
             byte type = InStream.ReadByte("Type: ");
@@ -390,9 +482,12 @@ namespace HIFFDecompile.Chunks
             if (InStream.debugprint) { Console.WriteLine("   ---END Set Value Combo---"); }
         }
 
-        private static void SpecialEffect(BetterBinaryReader InStream)
+        private static void SpecialEffect(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---Special Effect---"); }
+
+            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
 
             //AT_SET_VALUE = 78
             byte type = InStream.ReadByte("Type: ");

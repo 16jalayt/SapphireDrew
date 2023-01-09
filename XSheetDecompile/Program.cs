@@ -79,7 +79,7 @@ namespace XSheetDecompile
 
             InStream.Dispose();
 
-            FileInfo file = new FileInfo(Path.GetDirectoryName(FileName) + "/Output/" + Path.GetFileNameWithoutExtension(FileName) + ".xs1");
+            FileInfo file = new FileInfo(Path.GetDirectoryName(InStream.FilePath) + "/Output/" + Path.GetFileNameWithoutExtension(InStream.FilePath) + ".xs1");
             file.Directory.Create();
             using (StreamWriter writetext = new StreamWriter(file.FullName))
             {

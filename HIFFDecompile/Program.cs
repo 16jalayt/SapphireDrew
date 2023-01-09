@@ -24,6 +24,7 @@ namespace HIFFDecompile
     {
         private static void Main(string[] args)
         {
+            //TODO: command line prefer short or long
             if (args.Length < 1)
             {
                 Console.WriteLine("Usage is HIFFDecompile.exe filename");
@@ -49,12 +50,17 @@ namespace HIFFDecompile
 
             Console.WriteLine($"Printout of: '{FileName}'\n");
 
-            DecompChunk(InStream);
+            FileInfo file = new FileInfo(Path.GetDirectoryName(InStream.FilePath) + "/Output/" + Path.GetFileNameWithoutExtension(InStream.FilePath) + ".htxt");
+            file.Directory.Create();
+            StreamWriter writetext = new StreamWriter(file.FullName);
+
+            DecompChunk(InStream, writetext);
+            writetext.Close();
         }
 
         //Notes:data is top level chunk. Can be multiple chunks
-        //BIG ENDIAN!!!
-        private static void DecompChunk(BetterBinaryReader InStream)
+        //BIG ENDIAN chunk length only
+        private static void DecompChunk(BetterBinaryReader InStream, StreamWriter writetext)
         {
             string ChunkType = Helpers.String(InStream.ReadBytes(4));
             switch (ChunkType)
@@ -93,25 +99,25 @@ namespace HIFFDecompile
 
                             //Terse Summery
                             Helpers.AssertString(InStream, "TSUM");
-                            Scentsum(InStream);
+                            Scentsum(InStream, writetext);
                             break;
 
                         case "TEXT":
                             //convo text
                             Helpers.AssertString(InStream, "CVTX");
-                            Text(InStream);
+                            Text(InStream, writetext);
                             break;
 
                         case "BOOT":
                             //Not known if can be differnet
                             Helpers.AssertString(InStream, "BSUM");
-                            Boot_Bsum(InStream);
+                            Boot_Bsum(InStream, writetext);
                             break;
 
                         case "FONT":
                             //Not known if can be differnet
                             Helpers.AssertString(InStream, "FONT");
-                            Font(InStream);
+                            Font(InStream, writetext);
                             break;
 
                         default:
@@ -121,15 +127,15 @@ namespace HIFFDecompile
                     break;
                 //TODO: null is leading not trailing. This breaks stuff
                 case "ACT\0":
-                    ACT.Act(InStream);
+                    ACT.Act(InStream, writetext);
                     break;
 
                 case "USE\0":
-                    Use(InStream);
+                    Use(InStream, writetext);
                     break;
 
                 case "FONT":
-                    Font(InStream);
+                    Font(InStream, writetext);
                     break;
 
                 default:
@@ -140,10 +146,10 @@ namespace HIFFDecompile
 
             //If not end of file, must be another chunk
             if (InStream.Position() < InStream.Length())
-                DecompChunk(InStream);
+                DecompChunk(InStream, writetext);
         }
 
-        private static void Scentsum(BetterBinaryReader InStream)
+        private static void Scentsum(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine($"---Scentsum {InStream.Position()}---"); }
 
@@ -174,10 +180,29 @@ namespace HIFFDecompile
             short chan1 = InStream.ReadShort("chan1: ");
             short chan2 = InStream.ReadShort("chan2: ");
 
+            //can shorten to bg
+            if (chan1 == 85 && chan2 == 85 && loop == 1 && sceneChan == 0 && !Utils.preferLong)
+            {
+                //TODO: Nitpick: clean up when no sound
+                writetext.WriteLine($"bg {RefAVF} {RefSound}\n");
+            }
+            else
+            {
+                writetext.WriteLine($"CHUNK TSUM {{");
+                writetext.WriteLine($"CHAR[50]  \"{SceneDesc}\"");
+                writetext.WriteLine($"RevAVF    \"{RefAVF}\"");
+                writetext.WriteLine($"RefSound  \"{RefSound}\"");
+                writetext.WriteLine($"int     \"{Enums.soundChannel[sceneChan]}\"");
+                writetext.WriteLine($"long    \"{Enums.loop[loop]}\"");
+                writetext.WriteLine($"int     \"{chan1}\"");
+                writetext.WriteLine($"int     \"{chan2}\"");
+                writetext.WriteLine($"}}\n");
+            }
+
             if (InStream.debugprint) { Console.WriteLine("---END Scentsum---\n"); }
         }
 
-        private static void Boot_Bsum(BetterBinaryReader InStream)
+        private static void Boot_Bsum(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine($"---BSUM {InStream.Position()}---"); }
 
@@ -193,7 +218,7 @@ namespace HIFFDecompile
             if (InStream.debugprint) { Console.WriteLine("---END BSUM---\n"); }
         }
 
-        private static void Text(BetterBinaryReader InStream)
+        private static void Text(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine($"---Text {InStream.Position()}---"); }
 
@@ -219,7 +244,7 @@ namespace HIFFDecompile
             if (InStream.debugprint) { Console.WriteLine("---END Text---\n"); }
         }
 
-        private static void Font(BetterBinaryReader InStream)
+        private static void Font(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine($"---Font {InStream.Position()}---"); }
 
@@ -248,7 +273,7 @@ namespace HIFFDecompile
         }
 
         //Use seems to be an import/func call
-        private static void Use(BetterBinaryReader InStream)
+        private static void Use(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine($"--USE {InStream.Position()}---"); }
 
@@ -256,16 +281,41 @@ namespace HIFFDecompile
 
             //num refs
             short NumRefs = InStream.ReadShort("Num refs: ");
+            string[] refs = new string[NumRefs];
 
             for (int i = 0; i < NumRefs; i++)
             {
                 string name = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
                 if (InStream.debugprint) { Console.WriteLine("   -" + name); }
+                refs[i] = name;
             }
 
             //might be byte aligned
             if (InStream.IsEOF() != true && InStream.ReadByte() != 0)
                 InStream.Skip(-1);
+
+            //can shorten to use
+            if (!Utils.preferLong)
+            {
+                writetext.Write($"use");
+                for (int i = 0; i < NumRefs; i++)
+                {
+                    writetext.Write($" {refs[i]}");
+                }
+                writetext.Write($"\n");
+            }
+            else
+            {
+                writetext.WriteLine($"CHUNK USE {{");
+                writetext.WriteLine($"  BeginCount RefHif");
+                for (int i = 0; i < NumRefs; i++)
+                {
+                    writetext.WriteLine($"    RefHif    \"{refs[i]}\"     // Hif file to include (without the \".hif\")");
+                }
+
+                writetext.WriteLine($"  EndCount RefHif");
+                writetext.WriteLine($"}}\n");
+            }
 
             if (InStream.debugprint) { Console.WriteLine("---END USE---\n"); }
         }
