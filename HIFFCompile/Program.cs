@@ -3,12 +3,18 @@ using System;
 using System.Buffers.Binary;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace HIFFCompile
 {
     internal class Program
     {
+        private static string[] lines;
+        private static int pos = 0;
+
+        //TODO:break on error
+
         private static void Main(string[] args)
         {
             //Tool status
@@ -35,6 +41,8 @@ namespace HIFFCompile
                 Console.WriteLine($"The file: '{FileName}' does not exist.\n");
                 return;
             }
+
+            Console.WriteLine($"Compiling: '{FileName}'");
 
             FileInfo outFile = new FileInfo(Path.GetDirectoryName(testFile.FilePath) + "/Output/" + Path.GetFileNameWithoutExtension(testFile.FilePath) + ".hiff");
             testFile.Dispose();
@@ -66,23 +74,36 @@ namespace HIFFCompile
             long dataPlace = outStream.BaseStream.Position;
 
             //write data header
-
-            string[] lines = File.ReadLines(FileName).ToArray();
-            for (int i = 0; i < lines.Length; i++)
+            lines = File.ReadLines(FileName).ToArray();
+            for (; pos < lines.Length; pos++)
             {
-                if (lines[i].StartsWith("//") || lines[i] == "")
+                if (getLine().StartsWith("//") || getLine() == "")
                     continue;
-                else if (lines[i] == "CHUNK TSUM {")
+                else if (getLine() == "CHUNK TSUM {")
                 {
                     outStream.Write(Encoding.UTF8.GetBytes("SCENTSUM"));
                     outStream.Write((int)-1);
                     long scenPlace = outStream.BaseStream.Position;
 
-                    string sceneBack = lines[i + 1];
-                    sceneBack = sceneBack.Substring(sceneBack.IndexOf("\"") + 1);
-                    sceneBack = sceneBack.Substring(0, sceneBack.LastIndexOf("\""));
-                    sceneBack = sceneBack.PadRight(50, '\0');
-                    outStream.Write(Encoding.UTF8.GetBytes(sceneBack));
+                    string SceneDesc = getNextLine();
+                    SceneDesc = SceneDesc.Substring(SceneDesc.IndexOf("\"") + 1);
+                    SceneDesc = SceneDesc.Substring(0, SceneDesc.LastIndexOf("\""));
+                    SceneDesc = SceneDesc.PadRight(50, '\0');
+                    outStream.Write(Encoding.UTF8.GetBytes(SceneDesc));
+
+                    string RefAVF = getNextLine();
+                    RefAVF = RefAVF.Substring(RefAVF.IndexOf("\"") + 1);
+                    RefAVF = RefAVF.Substring(0, RefAVF.LastIndexOf("\""));
+                    RefAVF = RefAVF.PadRight(50, '\0');
+                    outStream.Write(Encoding.UTF8.GetBytes(RefAVF));
+
+                    string RefSound = getNextLine();
+                    RefSound = RefSound.Substring(RefSound.IndexOf("\"") + 1);
+                    RefSound = RefSound.Substring(0, RefSound.LastIndexOf("\""));
+                    RefSound = RefSound.PadRight(50, '\0');
+                    outStream.Write(Encoding.UTF8.GetBytes(RefSound));
+
+                    //int chan = (int)getNextObject();
 
                     long endChunk = outStream.BaseStream.Position;
                     outStream.Seek((int)scenPlace - 4, SeekOrigin.Begin);
@@ -90,9 +111,12 @@ namespace HIFFCompile
                     outStream.Write(length);
                     outStream.Seek((int)endChunk, SeekOrigin.Begin);
 
-                    i += 8;
+                    if (getNextLine() != "}")
+                    {
+                        Console.WriteLine("TSUM chunk not closed.");
+                    }
                 }
-                else if (lines[i] == "CHUNK USE {")
+                else if (getLine() == "CHUNK USE {")
                 {
                     outStream.Write(Encoding.UTF8.GetBytes("USE\0"));
                     outStream.Write((int)-1);
@@ -102,13 +126,15 @@ namespace HIFFCompile
                     outStream.Write((short)-1);
                     long numDepsPlace = outStream.BaseStream.Position;
 
-                    if (lines[i + 1] != "  BeginCount RefHif")
-                        Console.WriteLine($"Unknown use contents: '{lines[i + 1]}'");
-
-                    int j = 0;
-                    while (lines[i + 2 + j] != "  EndCount RefHif")
+                    if (getNextLine() != "BeginCount RefHif")
                     {
-                        string useRef = lines[i + 2 + j];
+                        Console.WriteLine($"Unknown use contents: '{getLine()}'");
+                        break;
+                    }
+
+                    while (getNextLine() != "EndCount RefHif")
+                    {
+                        string useRef = getLine();
                         useRef = useRef.Substring(useRef.IndexOf("\"") + 1);
                         useRef = useRef.Substring(0, useRef.LastIndexOf("\""));
                         useRef = useRef.PadRight(50, '\0');
@@ -127,12 +153,76 @@ namespace HIFFCompile
                     outStream.Write(length);
                     outStream.Seek((int)endChunk, SeekOrigin.Begin);
 
-                    i += i + j + 3;
+                    if (getNextLine() != "}")
+                    {
+                        Console.WriteLine("TSUM chunk not closed.");
+                    }
                 }
                 else
-                    Console.WriteLine($"Unknown line contents: '{lines[i]}'");
+                {
+                    Console.WriteLine($"Unknown line contents: '{getLine()}' on line {pos + 1}");
+                    break;
+                }
             }
+
+            if (pos < lines.Length)
+                Console.WriteLine($"Syntax error in: '{FileName}'");
+            else
+            {
+                //update data chunk length at beginning of file
+                long endChunk = outStream.BaseStream.Position;
+                outStream.Seek((int)dataPlace - 4, SeekOrigin.Begin);
+                int length = BinaryPrimitives.ReverseEndianness((int)(endChunk - dataPlace));
+                outStream.Write(length);
+                outStream.Seek((int)endChunk, SeekOrigin.Begin);
+
+                Console.WriteLine("Success");
+            }
+
             outStream.Close();
         }
+
+        private static string getNextLine()
+        {
+            pos++;
+            //ignore comments
+            if (lines[pos].Contains("//"))
+            {
+                lines[pos] = lines[pos].Substring(0, lines[pos].IndexOf("//"));
+                //If line has only comment, get next available line
+                if (lines[pos] == "")
+                    getNextLine();
+            }
+
+            lines[pos] = lines[pos].Trim();
+            return lines[pos];
+        }
+
+        private static string getLine()
+        {
+            return lines[pos];
+        }
+
+        /*private static Object getObject()
+        {
+            return null;
+        }
+
+        private static Object getNextObject()
+        {
+            string[] parts = System.Text.RegularExpressions.Regex.Split(getNextLine(), @"\s+");
+            if (parts[0] == "int")
+            {
+                int intToReturn;
+                if (!int.TryParse(parts[1], out intToReturn))
+                {
+                    Console.WriteLine($"'{parts[1]}' on line {pos + 1} is not a number.");
+                    return null;
+                }
+                return intToReturn;
+            }
+
+            return getObject();
+        }*/
     }
 }
