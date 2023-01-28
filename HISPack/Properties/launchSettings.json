@@ -2,7 +2,7 @@
   "profiles": {
     "HISExtract": {
       "commandName": "Project",
-      "commandLineArgs": "Bluegrass_SFX.HIS"
+      "commandLineArgs": "RKFBust01.wav -v"
     }
   }
 }

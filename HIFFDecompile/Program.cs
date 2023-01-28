@@ -45,10 +45,12 @@ namespace HIFFDecompile
             }
             BetterBinaryReader InStream = new BetterBinaryReader(FileName);
 
-            if (args.Length > 1 && args[1] == "-v")
+            if (args.Length > 1 && args[1] == "-v" || args.Length > 2 && args[2] == "-v")
+                InStream.debugprint = true;
+            else if (args.Length > 1 && args[1] == "-l" || args.Length > 2 && args[2] == "-l")
                 InStream.debugprint = true;
 
-            Console.WriteLine($"Printout of: '{FileName}'\n");
+            Console.WriteLine($"Printout of: '{InStream.FilePath}'\n");
 
             FileInfo file = new FileInfo(Path.GetDirectoryName(InStream.FilePath) + "/Output/" + Path.GetFileNameWithoutExtension(InStream.FilePath) + ".htxt");
             file.Directory.Create();

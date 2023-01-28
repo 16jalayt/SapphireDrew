@@ -195,15 +195,15 @@ namespace HIFFDecompile.Chunks
 
             if (HSType == 19)
             {
-                if (InStream.debugprint) { Console.WriteLine($"---Scnene Change with hot {InStream.Position()}---"); }
+                if (InStream.debugprint) { Console.WriteLine($"---Scene Change with hot {InStream.Position()}---"); }
             }
             else if (HSType == 15)
             {
-                if (InStream.debugprint) { Console.WriteLine($"---Scnene Change {InStream.Position()}---"); }
+                if (InStream.debugprint) { Console.WriteLine($"---Scene Change {InStream.Position()}---"); }
             }
             else if (HSType == 16)
             {
-                if (InStream.debugprint) { Console.WriteLine($"---Scnene Change with frame {InStream.Position()}---"); }
+                if (InStream.debugprint) { Console.WriteLine($"---Scene Change with frame {InStream.Position()}---"); }
             }
 
             //AE_SINGLE_EXEC = 1
@@ -286,7 +286,7 @@ namespace HIFFDecompile.Chunks
             //LOOP_ONCE = 1
             int loop = InStream.ReadInt("Loop: ");
 
-            //Unknown
+            //Unknown. volume?
             short unknown = InStream.ReadShort("Unknown: ");
 
             //next scene before sound ends

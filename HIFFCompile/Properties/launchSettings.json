@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "HIFFCompile": {
+      "commandName": "Project",
+      "commandLineArgs": "S3514.htxt -v"
+    }
+  }
+}
