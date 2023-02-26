@@ -54,18 +54,14 @@ namespace HIFFCompile
             {
                 outStream.Write(Encoding.UTF8.GetBytes("DATA"));
                 //Chunk length placeholder
-                outStream.Write((int)-1);
                 long FdataPlace = outStream.BaseStream.Position;
+                outStream.Write((int)-1);
 
                 outStream.Write(Encoding.UTF8.GetBytes("FLAGEVNT"));
 
                 outStream.Write((int)0);
 
-                long FendChunk = outStream.BaseStream.Position;
-                outStream.Seek((int)FdataPlace - 4, SeekOrigin.Begin);
-                int Flength = BinaryPrimitives.ReverseEndianness((int)(FendChunk - FdataPlace));
-                outStream.Write(Flength);
-                outStream.Seek((int)FendChunk, SeekOrigin.Begin);
+                writeLength(ref outStream, FdataPlace);
             }
 
             outStream.Write(Encoding.UTF8.GetBytes("DATA"));
@@ -79,37 +75,40 @@ namespace HIFFCompile
             {
                 if (getLine().StartsWith("//") || getLine() == "")
                     continue;
+                //TODO: change to generic switch token insted of exact match
+                else if (getLine() == "CHUNK ACT {")
+                {
+                }
                 else if (getLine() == "CHUNK TSUM {")
                 {
                     outStream.Write(Encoding.UTF8.GetBytes("SCENTSUM"));
-                    outStream.Write((int)-1);
                     long scenPlace = outStream.BaseStream.Position;
+                    outStream.Write((int)-1);
 
-                    string SceneDesc = getNextLine();
-                    SceneDesc = SceneDesc.Substring(SceneDesc.IndexOf("\"") + 1);
-                    SceneDesc = SceneDesc.Substring(0, SceneDesc.LastIndexOf("\""));
-                    SceneDesc = SceneDesc.PadRight(50, '\0');
-                    outStream.Write(Encoding.UTF8.GetBytes(SceneDesc));
+                    //Scene description
+                    if (!getNextString(ref outStream, 50))
+                        break;
+                    //Background file without extension
+                    if (!getNextString(ref outStream, 33))
+                        break;
+                    //Background sound
+                    if (!getNextString(ref outStream, 33))
+                        break;
 
-                    string RefAVF = getNextLine();
-                    RefAVF = RefAVF.Substring(RefAVF.IndexOf("\"") + 1);
-                    RefAVF = RefAVF.Substring(0, RefAVF.LastIndexOf("\""));
-                    RefAVF = RefAVF.PadRight(50, '\0');
-                    outStream.Write(Encoding.UTF8.GetBytes(RefAVF));
+                    //Channel of backgound sound
+                    if (!getNextObject<short>(ref outStream, Enums.soundChannel))
+                        break;
+                    //Loop background sound?
+                    if (!getNextObject<int>(ref outStream, Enums.loop))
+                        break;
+                    //Left channel volume for background sound
+                    if (!getNextObject<short>(ref outStream, null))
+                        break;
+                    //Right channel volume for background sound
+                    if (!getNextObject<short>(ref outStream, null))
+                        break;
 
-                    string RefSound = getNextLine();
-                    RefSound = RefSound.Substring(RefSound.IndexOf("\"") + 1);
-                    RefSound = RefSound.Substring(0, RefSound.LastIndexOf("\""));
-                    RefSound = RefSound.PadRight(50, '\0');
-                    outStream.Write(Encoding.UTF8.GetBytes(RefSound));
-
-                    //int chan = (int)getNextObject();
-
-                    long endChunk = outStream.BaseStream.Position;
-                    outStream.Seek((int)scenPlace - 4, SeekOrigin.Begin);
-                    int length = BinaryPrimitives.ReverseEndianness((int)(endChunk - scenPlace));
-                    outStream.Write(length);
-                    outStream.Seek((int)endChunk, SeekOrigin.Begin);
+                    writeLength(ref outStream, scenPlace);
 
                     if (getNextLine() != "}")
                     {
@@ -119,12 +118,12 @@ namespace HIFFCompile
                 else if (getLine() == "CHUNK USE {")
                 {
                     outStream.Write(Encoding.UTF8.GetBytes("USE\0"));
-                    outStream.Write((int)-1);
                     long usePlace = outStream.BaseStream.Position;
+                    outStream.Write((int)-1);
 
                     //numDeps placeholder
-                    outStream.Write((short)-1);
                     long numDepsPlace = outStream.BaseStream.Position;
+                    outStream.Write((short)-1);
 
                     if (getNextLine() != "BeginCount RefHif")
                     {
@@ -132,26 +131,19 @@ namespace HIFFCompile
                         break;
                     }
 
+                    short numDeps = 0;
                     while (getNextLine() != "EndCount RefHif")
                     {
-                        string useRef = getLine();
-                        useRef = useRef.Substring(useRef.IndexOf("\"") + 1);
-                        useRef = useRef.Substring(0, useRef.LastIndexOf("\""));
-                        useRef = useRef.PadRight(50, '\0');
-                        outStream.Write(Encoding.UTF8.GetBytes(useRef));
+                        getString(ref outStream, 33);
+                        numDeps++;
                     }
 
                     long endDeps = outStream.BaseStream.Position;
-                    outStream.Seek((int)usePlace - 2, SeekOrigin.Begin);
-                    int deplength = BinaryPrimitives.ReverseEndianness((int)(endDeps - numDepsPlace));
-                    outStream.Write(deplength);
+                    outStream.Seek((int)numDepsPlace, SeekOrigin.Begin);
+                    outStream.Write(numDeps);
                     outStream.Seek((int)endDeps, SeekOrigin.Begin);
 
-                    long endChunk = outStream.BaseStream.Position;
-                    outStream.Seek((int)usePlace - 4, SeekOrigin.Begin);
-                    int length = BinaryPrimitives.ReverseEndianness((int)(endChunk - usePlace));
-                    outStream.Write(length);
-                    outStream.Seek((int)endChunk, SeekOrigin.Begin);
+                    writeLength(ref outStream, usePlace);
 
                     if (getNextLine() != "}")
                     {
@@ -203,26 +195,102 @@ namespace HIFFCompile
             return lines[pos];
         }
 
-        /*private static Object getObject()
+        private static bool getObject<T>(ref BinaryWriter outStream, string[] enumType)
         {
-            return null;
+            //Remember types get downcast by one so ND long is C int
+            string[] parts = System.Text.RegularExpressions.Regex.Split(getLine(), @"\s+");
+            if (parts[0] != "long" && parts[0] != "int")
+            {
+                Console.WriteLine($"Invalid type: '{parts[0]}' on line {pos + 1}. Must be int or long.");
+                return false;
+            }
+            int inEnum;
+            //if not a number, either enum or syntax error
+            if (!int.TryParse(parts[1], out inEnum))
+            {
+                inEnum = Array.FindIndex(enumType, x => x.Contains(parts[1]));
+                if (inEnum == -1)
+                {
+                    Console.WriteLine($"'{parts[1]}' on line {pos + 1} is not a number or enum value.");
+                    return false;
+                }
+            }
+            if (typeof(T) == typeof(int))
+                outStream.Write(inEnum);
+            if (typeof(T) == typeof(short))
+                outStream.Write((short)inEnum);
+            return true;
         }
 
-        private static Object getNextObject()
+        private static bool getNextObject<T>(ref BinaryWriter outStream, string[] enumType)
         {
-            string[] parts = System.Text.RegularExpressions.Regex.Split(getNextLine(), @"\s+");
-            if (parts[0] == "int")
+            getNextLine();
+            return getObject<T>(ref outStream, enumType);
+        }
+
+        private static bool getString(ref BinaryWriter outStream, int length)
+        {
+            string SceneDesc = getLine();
+
+            //split input keyword and expression
+            string[] parts = System.Text.RegularExpressions.Regex.Split(getLine(), @"\s+");
+
+            //Reassemble the quoted part of the string. If there are spaces, it will be split
+            for (int i = 2; i < parts.Length; i++)
             {
-                int intToReturn;
-                if (!int.TryParse(parts[1], out intToReturn))
-                {
-                    Console.WriteLine($"'{parts[1]}' on line {pos + 1} is not a number.");
-                    return null;
-                }
-                return intToReturn;
+                parts[1] = parts[1] + " " + parts[i];
             }
 
-            return getObject();
-        }*/
+            //validate keyword
+            if (parts[0] != "RefAVF" && parts[0] != "RefSound" && parts[0] != "RefHif")
+            {
+                if (parts[0].Contains("[") && parts[0].Contains("]"))
+                {
+                    parts[0] = parts[0].Substring(parts[0].IndexOf("[") + 1);
+                    parts[0] = parts[0].Substring(0, parts[0].LastIndexOf("]"));
+                }
+                else
+                {
+                    Console.WriteLine($"Unknown keyword: '{parts[0]}' on line {pos + 1}. Must be char[x], RefAVF, RefHif, or RefSound");
+                    return false;
+                }
+            }
+
+            //validate expression
+            if (parts[1].Length < 1 || parts[1].Length > length)
+            {
+                Console.WriteLine($"Expression too long: '{parts[1]}' on line {pos + 1}. Must be less than {length}");
+                return false;
+            }
+
+            if (parts[1].Count(f => f == '\"') != 2)
+            {
+                Console.WriteLine($"Expression must be in double quotes \"x\": '{parts[1]}' on line {pos + 1}");
+                return false;
+            }
+
+            //Trim line
+            SceneDesc = SceneDesc.Substring(SceneDesc.IndexOf("\"") + 1);
+            SceneDesc = SceneDesc.Substring(0, SceneDesc.LastIndexOf("\""));
+            SceneDesc = SceneDesc.PadRight(length, '\0');
+            outStream.Write(Encoding.UTF8.GetBytes(SceneDesc));
+
+            return true;
+        }
+
+        private static bool getNextString(ref BinaryWriter outStream, int length)
+        {
+            getNextLine();
+            return getString(ref outStream, length);
+        }
+
+        private static void writeLength(ref BinaryWriter outStream, long placeholder)
+        {
+            long endChunk = outStream.BaseStream.Position;
+            outStream.Seek((int)placeholder, SeekOrigin.Begin);
+            int length = BinaryPrimitives.ReverseEndianness((int)(endChunk - placeholder - 4));
+            outStream.Write(length);
+            outStream.Seek((int)endChunk, SeekOrigin.Begin);
+        }
     }
 }

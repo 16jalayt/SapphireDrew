@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HIFFDecompile
+namespace Sapphire_Extract_Helpers
 {
-    internal static class Enums
+    public static class Enums
     {
         public static string[] soundChannel = { "SS_THEME_CHAN0", "SS_MUSIC_SUPP_CHAN0", "SS_MUSIC_SUPP_CHAN1", "SS_MUSIC_SUPP_CHAN2",
             "SS_AMB_CHAN0", "SS_AMB_CHAN1", "SS_AMB_CHAN2", "SS_AMB_CHAN3", "SS_SPEC_EFFECT_CHAN0", "SS_SPEC_EFFECT_CHAN1",
