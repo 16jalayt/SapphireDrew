@@ -1,9 +1,12 @@
 ﻿using Sapphire_Extract_Helpers;
 using System;
 using System.Buffers.Binary;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.AccessControl;
 using System.Text;
 
 namespace HIFFCompile
@@ -12,6 +15,15 @@ namespace HIFFCompile
     {
         private static string[] lines;
         private static int pos = 0;
+        private static List<string[]> enumList = new List<string[]> { Enums.soundChannel, Enums.execType, Enums.loop, Enums.tf, Enums.CCTEXT_TYPE, Enums.depFlag, Enums.z };
+        private static BinaryWriter outStream;
+        private static long chunkClose = -1;
+        private static int refCount = 0;
+        private static string refCountType = "";
+        private static long refCountPos = 0;
+
+        //Used to know when to insert deps
+        private static int byteCount = 0;
 
         //TODO:break on error
 
@@ -27,27 +39,27 @@ namespace HIFFCompile
                 Console.WriteLine($"Usage is XSheetCompile.exe filename\n");
                 return;
             }
-            string FileName = args[0];
+            string inFile = args[0];
 
             bool olderGame = false;
             if (args.Length > 1 && args[1] == "-o")
                 olderGame = true;
 
             //only used to get full path of input
-            BetterBinaryReader testFile = new BetterBinaryReader(FileName);
+            BetterBinaryReader testFile = new BetterBinaryReader(inFile);
 
-            if (!File.Exists(FileName))
+            if (!File.Exists(inFile))
             {
-                Console.WriteLine($"The file: '{FileName}' does not exist.\n");
+                Console.WriteLine($"The file: '{inFile}' does not exist.\n");
                 return;
             }
 
-            Console.WriteLine($"Compiling: '{FileName}'");
+            Console.WriteLine($"Compiling: '{inFile}'");
 
             FileInfo outFile = new FileInfo(Path.GetDirectoryName(testFile.FilePath) + "/Output/" + Path.GetFileNameWithoutExtension(testFile.FilePath) + ".hiff");
             testFile.Dispose();
             outFile.Directory.Create();
-            BinaryWriter outStream = new BinaryWriter(new FileStream(outFile.FullName, FileMode.Create), Encoding.UTF8);
+            outStream = new BinaryWriter(new FileStream(outFile.FullName, FileMode.Create), Encoding.UTF8);
 
             //If newer game write FLAGEVNT block
             if (!olderGame)
@@ -67,98 +79,18 @@ namespace HIFFCompile
             outStream.Write(Encoding.UTF8.GetBytes("DATA"));
             //Chunk length placeholder
             outStream.Write((int)-1);
+            //TODO: add to stack
             long dataPlace = outStream.BaseStream.Position;
+            outStream.Write(Encoding.UTF8.GetBytes("SCEN"));
 
-            //write data header
-            lines = File.ReadLines(FileName).ToArray();
-            for (; pos < lines.Length; pos++)
-            {
-                if (getLine().StartsWith("//") || getLine() == "")
-                    continue;
-                //TODO: change to generic switch token insted of exact match
-                else if (getLine() == "CHUNK ACT {")
-                {
-                }
-                else if (getLine() == "CHUNK TSUM {")
-                {
-                    outStream.Write(Encoding.UTF8.GetBytes("SCENTSUM"));
-                    long scenPlace = outStream.BaseStream.Position;
-                    outStream.Write((int)-1);
+            //Get uncompiled file as array
+            lines = File.ReadLines(inFile).ToArray();
 
-                    //Scene description
-                    if (!getNextString(ref outStream, 50))
-                        break;
-                    //Background file without extension
-                    if (!getNextString(ref outStream, 33))
-                        break;
-                    //Background sound
-                    if (!getNextString(ref outStream, 33))
-                        break;
+            //Parse file line by line until error
+            while (parseLine(outStream)) { }
 
-                    //Channel of backgound sound
-                    if (!getNextObject<short>(ref outStream, Enums.soundChannel))
-                        break;
-                    //Loop background sound?
-                    if (!getNextObject<int>(ref outStream, Enums.loop))
-                        break;
-                    //Left channel volume for background sound
-                    if (!getNextObject<short>(ref outStream, null))
-                        break;
-                    //Right channel volume for background sound
-                    if (!getNextObject<short>(ref outStream, null))
-                        break;
-
-                    writeLength(ref outStream, scenPlace);
-
-                    if (getNextLine() != "}")
-                    {
-                        Console.WriteLine("TSUM chunk not closed.");
-                    }
-                }
-                else if (getLine() == "CHUNK USE {")
-                {
-                    outStream.Write(Encoding.UTF8.GetBytes("USE\0"));
-                    long usePlace = outStream.BaseStream.Position;
-                    outStream.Write((int)-1);
-
-                    //numDeps placeholder
-                    long numDepsPlace = outStream.BaseStream.Position;
-                    outStream.Write((short)-1);
-
-                    if (getNextLine() != "BeginCount RefHif")
-                    {
-                        Console.WriteLine($"Unknown use contents: '{getLine()}'");
-                        break;
-                    }
-
-                    short numDeps = 0;
-                    while (getNextLine() != "EndCount RefHif")
-                    {
-                        getString(ref outStream, 33);
-                        numDeps++;
-                    }
-
-                    long endDeps = outStream.BaseStream.Position;
-                    outStream.Seek((int)numDepsPlace, SeekOrigin.Begin);
-                    outStream.Write(numDeps);
-                    outStream.Seek((int)endDeps, SeekOrigin.Begin);
-
-                    writeLength(ref outStream, usePlace);
-
-                    if (getNextLine() != "}")
-                    {
-                        Console.WriteLine("TSUM chunk not closed.");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"Unknown line contents: '{getLine()}' on line {pos + 1}");
-                    break;
-                }
-            }
-
-            if (pos < lines.Length)
-                Console.WriteLine($"Syntax error in: '{FileName}'");
+            if (pos < lines.Length - 1)
+                Console.WriteLine($"Syntax error in: '{inFile}'");
             else
             {
                 //update data chunk length at beginning of file
@@ -174,7 +106,164 @@ namespace HIFFCompile
             outStream.Close();
         }
 
-        private static string getNextLine()
+        private static bool parseLine(BinaryWriter outStream)
+        {
+            string[] currentLine = getNextLine();
+
+            //Handle special because not just token=, there is a variable inside 1st token
+            if (currentLine[0].Contains("char") == true)
+            {
+                string[] parts = prepExp(currentLine);
+                string number;
+                if (parts[0].Contains("[") && parts[0].Contains("]"))
+                {
+                    number = parts[0].Substring(parts[0].IndexOf("[") + 1);
+                    number = number.Substring(0, number.LastIndexOf("]"));
+
+                    int length = getNumber(number);
+                    if (length == -9999)
+                        return false;
+
+                    if (!writeStringExpression(parts[1], length))
+                        return false;
+                }
+                else
+                {
+                    Console.WriteLine($"Unknown keyword: '{parts[0]}' on line {pos + 1}. Must be char[x]");
+                    return false;
+                }
+                return true;
+            }
+
+            //Check first token in line
+            switch (currentLine[0])
+            {
+                case "CHUNK":
+                    //validate tokens
+                    if (currentLine.Length != 3)
+                    {
+                        Console.WriteLine($"Chunk must specify a chunk type and contain an open bracket: '{getLineRaw()}' on line {pos + 1}");
+                        return false;
+                    }
+                    if (currentLine[2] != "{")
+                    {
+                        Console.WriteLine($"Chunk must contain an open bracket: '{getLineRaw()}' on line {pos + 1}");
+                        return false;
+                    }
+                    if (currentLine[1].Length > 4)
+                    {
+                        Console.WriteLine($"Chunk type too long: '{getLineRaw()}' on line {pos + 1}");
+                        return false;
+                    }
+                    //TODO: validate all caps
+
+                    currentLine[1] = currentLine[1].PadRight(4, '\0');
+                    //Just write header.
+                    outStream.Write(Encoding.UTF8.GetBytes(currentLine[1]));
+                    chunkClose = outStream.BaseStream.Position;
+                    outStream.Write((int)-1);
+                    break;
+
+                case "byte":
+                    handleCount("byte");
+                    byteCount++;
+                    int byteVal = getNumber(currentLine[1]);
+                    if (byteVal == -9999)
+                        return false;
+                    outStream.Write((byte)byteVal);
+
+                    if (byteCount == 2)
+                    {
+                        //Parse deps
+
+                        //look ahead until RefDep
+                    }
+
+                    break;
+
+                case "int":
+                    handleCount("int");
+                    int intVal = getNumber(currentLine[1]);
+                    if (intVal == -9999)
+                        return false;
+                    outStream.Write((short)intVal);
+                    break;
+
+                case "long":
+                    handleCount("long");
+                    int longVal = getNumber(currentLine[1]);
+                    if (longVal == -9999)
+                        return false;
+                    outStream.Write((int)longVal);
+                    break;
+
+                case "RefAVF":
+                    handleCount("RefAVF");
+                    string[] RefAVF = prepExp(currentLine);
+                    if (!writeStringExpression(RefAVF[1], 33))
+                        return false;
+                    break;
+
+                case "RefSound":
+                    handleCount("RefSound");
+                    string[] RefSound = prepExp(currentLine);
+                    if (!writeStringExpression(RefSound[1], 33))
+                        return false;
+                    break;
+
+                case "RefHif":
+                    handleCount("RefHif");
+                    string[] RefHif = prepExp(currentLine);
+                    if (!writeStringExpression(RefHif[1], 33))
+                        return false;
+                    break;
+
+                case "RefDep":
+                    //TODO: skip to }
+                    break;
+
+                case "BeginCount":
+                    refCount = 0;
+                    refCountType = currentLine[1];
+                    refCountPos = outStream.BaseStream.Position;
+                    outStream.Write((short)-1);
+                    break;
+
+                case "EndCount":
+                    long currentPos = outStream.BaseStream.Position;
+                    outStream.Seek((int)refCountPos, SeekOrigin.Begin);
+                    outStream.Write((short)refCount);
+                    outStream.Seek((int)currentPos, SeekOrigin.Begin);
+
+                    refCount = 0;
+                    refCountType = "";
+                    break;
+
+                case "}":
+                    if (chunkClose == -1)
+                    {
+                        Console.WriteLine($"Too many closures at line: {pos + 1}");
+                        return false;
+                    }
+
+                    writeLength(ref outStream, chunkClose);
+                    chunkClose = -1;
+                    break;
+
+                default:
+                    Console.WriteLine($"Unknown line contents: '{getLineRaw()}' on line {pos + 1}");
+                    return false;
+            }
+            return true;
+        }
+
+        private static void handleCount(string type)
+        {
+            if (type == refCountType)
+                refCount++;
+        }
+
+        private static string getNextLineRaw()
         {
             pos++;
             //ignore comments
@@ -183,105 +272,92 @@ namespace HIFFCompile
                 lines[pos] = lines[pos].Substring(0, lines[pos].IndexOf("//"));
                 //If line has only comment, get next available line
                 if (lines[pos] == "")
-                    getNextLine();
+                    getNextLineRaw();
             }
+            while (lines[pos] == "")
+                getNextLineRaw();
 
             lines[pos] = lines[pos].Trim();
             return lines[pos];
         }
 
-        private static string getLine()
+        private static string getLineRaw()
         {
             return lines[pos];
         }
 
-        private static bool getObject<T>(ref BinaryWriter outStream, string[] enumType)
+        private static string[] getNextLine()
         {
-            //Remember types get downcast by one so ND long is C int
-            string[] parts = System.Text.RegularExpressions.Regex.Split(getLine(), @"\s+");
-            if (parts[0] != "long" && parts[0] != "int")
+            String line = getNextLineRaw();
+            return tokenize(line);
+        }
+
+        private static string[] getLine()
+        {
+            //TODO: cache result?
+            return tokenize(getLineRaw());
+        }
+
+        private static string[] tokenize(string input)
+        {
+            //split input keyword and expression
+            string[] parts = System.Text.RegularExpressions.Regex.Split(input, @"\s+");
+
+            return parts;
+        }
+
+        private static int getNumber(string input)
+        {
+            int result;
+            //if not a number, either enum or syntax error
+            if (int.TryParse(input, out result))
+                return result;
+            else
             {
-                Console.WriteLine($"Invalid type: '{parts[0]}' on line {pos + 1}. Must be int or long.");
+                foreach (string[] arr in enumList)
+                {
+                    result = Array.FindIndex(arr, x => x.Contains(input));
+                    if (result != -1)
+                    {
+                        return result;
+                    }
+                }
+                int myKey = Enums.ACT_Type.FirstOrDefault(x => x.Value == input).Key;
+                if (myKey != 0)
+                    return myKey;
+            }
+            Console.WriteLine($"Not in enum:{input}, on line: {pos + 1}");
+            return -9999;
+        }
+
+        private static bool writeStringExpression(string outString, int length)
+        {
+            if (outString.Count(f => f == '\"') != 2)
+            {
+                Console.WriteLine($"Expression must be in double quotes \"x\": '{outString}' on line {pos + 1}");
                 return false;
             }
-            int inEnum;
-            //if not a number, either enum or syntax error
-            if (!int.TryParse(parts[1], out inEnum))
-            {
-                inEnum = Array.FindIndex(enumType, x => x.Contains(parts[1]));
-                if (inEnum == -1)
-                {
-                    Console.WriteLine($"'{parts[1]}' on line {pos + 1} is not a number or enum value.");
-                    return false;
-                }
-            }
-            if (typeof(T) == typeof(int))
-                outStream.Write(inEnum);
-            if (typeof(T) == typeof(short))
-                outStream.Write((short)inEnum);
+            outString = outString.Substring(outString.IndexOf("\"") + 1);
+            outString = outString.Substring(0, outString.LastIndexOf("\""));
+            outString = outString.PadRight(length, '\0');
+            outStream.Write(Encoding.UTF8.GetBytes(outString));
+
             return true;
         }
 
-        private static bool getNextObject<T>(ref BinaryWriter outStream, string[] enumType)
+        private static string[] prepExp(string[] input)
         {
-            getNextLine();
-            return getObject<T>(ref outStream, enumType);
-        }
+            string[] output = new string[2];
 
-        private static bool getString(ref BinaryWriter outStream, int length)
-        {
-            string SceneDesc = getLine();
-
-            //split input keyword and expression
-            string[] parts = System.Text.RegularExpressions.Regex.Split(getLine(), @"\s+");
+            output[0] = input[0];
 
             //Reassemble the quoted part of the string. If there are spaces, it will be split
-            for (int i = 2; i < parts.Length; i++)
+            for (int i = 1; i < input.Length; i++)
             {
-                parts[1] = parts[1] + " " + parts[i];
+                output[1] = output[1] + " " + input[i];
             }
 
-            //validate keyword
-            if (parts[0] != "RefAVF" && parts[0] != "RefSound" && parts[0] != "RefHif")
-            {
-                if (parts[0].Contains("[") && parts[0].Contains("]"))
-                {
-                    parts[0] = parts[0].Substring(parts[0].IndexOf("[") + 1);
-                    parts[0] = parts[0].Substring(0, parts[0].LastIndexOf("]"));
-                }
-                else
-                {
-                    Console.WriteLine($"Unknown keyword: '{parts[0]}' on line {pos + 1}. Must be char[x], RefAVF, RefHif, or RefSound");
-                    return false;
-                }
-            }
-
-            //validate expression
-            if (parts[1].Length < 1 || parts[1].Length > length)
-            {
-                Console.WriteLine($"Expression too long: '{parts[1]}' on line {pos + 1}. Must be less than {length}");
-                return false;
-            }
-
-            if (parts[1].Count(f => f == '\"') != 2)
-            {
-                Console.WriteLine($"Expression must be in double quotes \"x\": '{parts[1]}' on line {pos + 1}");
-                return false;
-            }
-
-            //Trim line
-            SceneDesc = SceneDesc.Substring(SceneDesc.IndexOf("\"") + 1);
-            SceneDesc = SceneDesc.Substring(0, SceneDesc.LastIndexOf("\""));
-            SceneDesc = SceneDesc.PadRight(length, '\0');
-            outStream.Write(Encoding.UTF8.GetBytes(SceneDesc));
-
-            return true;
-        }
-
-        private static bool getNextString(ref BinaryWriter outStream, int length)
-        {
-            getNextLine();
-            return getString(ref outStream, length);
+            return output;
         }
 
         private static void writeLength(ref BinaryWriter outStream, long placeholder)

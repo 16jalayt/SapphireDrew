@@ -239,5 +239,10 @@ namespace Sapphire_Extract_Helpers
 
             return gamenum;
         }
+
+        public static void printStringArray(string[] arr)
+        {
+            Console.WriteLine("[{0}]", string.Join(", ", arr));
+        }
     }
 }
