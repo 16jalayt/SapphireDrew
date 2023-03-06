@@ -17,10 +17,15 @@ namespace Sapphire_Extract_Helpers
         public static string[] execType = { "UNKNOWN", "AE_SINGLE_EXEC" };
         public static string[] CCTEXT_TYPE = { "_NONE", "_SHORT", "_SCROLL" };
         public static string[] depFlag = { "OR_DEPENDENCY_OFF", "OR_DEPENDENCY_ON" };
+        public static string[] z = { "Null", "VIEWPORT_OVERLAY1_Z" };
+
+        public static string[] depType = { "Null", "DT_INVENTORY", "DT_EVENT", "DT_LOGIC",
+            "DT_ELAPSED_GAME_TIME", "DT_ELAPSED_SCENE_TIME", "DT_ELAPSED_PLAYER_TIME" };
 
         public static Dictionary<int, string> ACT_Type =
               new Dictionary<int, string>(){
-                                  {145, "AT_START_SOUND"},
-                                  {147, "AT_SET_VOLUME"}};
+                   {52, "AT_OVERLAY"},
+                   {145, "AT_START_SOUND"},
+                   {147, "AT_SET_VOLUME"}};
     }
 }
