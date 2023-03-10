@@ -1,6 +1,5 @@
 ﻿using Sapphire_Extract_Helpers;
 using System;
-using System.IO;
 
 namespace HIFFDecompile
 {

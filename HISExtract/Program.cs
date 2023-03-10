@@ -1,7 +1,6 @@
 ﻿using Sapphire_Extract_Helpers;
 using System;
 using System.IO;
-using System.Reflection.PortableExecutable;
 using System.Text;
 
 namespace HISExtract
