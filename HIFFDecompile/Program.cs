@@ -127,7 +127,7 @@ namespace HIFFDecompile
                             break;
                     }
                     break;
-                //TODO: null is leading not trailing. This breaks stuff
+
                 case "ACT\0":
                     ACT.Act(InStream, writetext);
                     break;

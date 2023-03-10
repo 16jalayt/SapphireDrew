@@ -109,11 +109,13 @@ namespace HIFFDecompile.Chunks
             if (InStream.debugprint) { Console.WriteLine("Name: " + name); }
 
             //Z order
-            byte ZOrder = InStream.ReadByte("ZOrder: ");
+            short ZOrder = InStream.ReadByte("ZOrder: ");
 
-            //Assert until can know for sure.
-            //Could be 2 bytes or one short
-            Helpers.AssertShortBE(InStream, 1);
+            //TODO: have to loop here
+            short numOVLs = InStream.ReadByte("numOVLs: ");
+
+            //Scene frame to draw in
+            short frame = InStream.ReadByte("frame: ");
 
             //graphic on img
             NancyRect src = new NancyRect(InStream, true);
@@ -123,7 +125,11 @@ namespace HIFFDecompile.Chunks
             if (InStream.debugprint) { Console.WriteLine("dest: " + dest); }
 
             //Does this do anything?
-            Helpers.AssertIntBE(InStream, 0);
+            //Helpers.AssertIntBE(InStream, 0);
+            //?padding to even chunk length?
+            int padding = InStream.ReadByte("padding check");
+            if (padding != 0)
+                InStream.Seek(-1);
 
             //MISSING: Scene frame and begin count
             //int frame = InStream.ReadInt();

@@ -2,10 +2,13 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace HIFFCompile
 {
@@ -14,7 +17,13 @@ namespace HIFFCompile
         private static string[] lines;
         private static int pos = 0;
 
-        //TODO:break on error
+        //private static HashSet<string> keywords = new HashSet<string>
+        //{ "byte", "int", "long", "RefDep", "RefFlag", "RefOvlStat" };
+        public static string[] keywords = { "byte", "int", "long", "RefDep", "RefFlag", "RefOvlStat", "RefSetFlag" };
+
+        public static string[] stringKeywords = { "RefAVF", "RefSound", "RefHif", "RefOvlStat" };
+
+        //TODO:delete partial file on faliure
 
         private static void Main(string[] args)
         {
@@ -101,14 +110,17 @@ namespace HIFFCompile
                     if (posEndDeps == -1)
                         break;
 
-                    parseAct(ref outStream, actType);
+                    if (!parseAct(ref outStream, actType))
+                        break;
 
-                    writeLength(ref outStream, actPlace);
+                    int actLength = writeLength(ref outStream, actPlace);
+
+                    //TODO: is this even right?
+                    //Pad to even chunk length
+                    if (actLength % 2 == 0)
+                        outStream.Write((byte)0);
+
                     pos = posEndDeps;
-
-                    string endOfDeps = "EndOfDeps";
-                    endOfDeps = endOfDeps.PadRight(32, '\0');
-                    outStream.Write(Encoding.UTF8.GetBytes(endOfDeps));
 
                     if (getNextLine() != "}")
                     {
@@ -223,10 +235,10 @@ namespace HIFFCompile
             //TODO: seperate recursive func insted of loops
             while (lines[pos] != "// ------------ Dependency -------------" && lines[pos] != "}" && pos < lines.Length - 1)
             { pos++; }
-            numDeps++;
 
             if (lines[pos] == "// ------------ Dependency -------------")
             {
+                numDeps++;
                 //Console.WriteLine($"Dep start {pos + 1}.");
                 //TODO: double check length
                 if (!getNextObject<short>(ref outStream, enumType: Enums.depType))
@@ -247,7 +259,8 @@ namespace HIFFCompile
                     return -1;
             }
             else
-                Console.WriteLine($"no dep {pos + 1}.");
+                pos--;
+            //Console.WriteLine($"no dep {pos + 1}.");
 
             //pos++;
             //}
@@ -261,14 +274,125 @@ namespace HIFFCompile
             outStream.Write(numDeps);
             outStream.Seek((int)depstemp, SeekOrigin.Begin);
 
+            string endOfDeps = "EndOfDeps";
+            endOfDeps = endOfDeps.PadRight(32, '\0');
+            outStream.Write(Encoding.UTF8.GetBytes(endOfDeps));
+
             return posEndDeps;
         }
 
-        private static void parseAct(ref BinaryWriter outStream, int actType)
+        private static bool parseAct(ref BinaryWriter outStream, int actType)
         {
-            /*switch ()
+            switch (actType)
             {
-            }*/
+                case 52:
+                    //RefOvlStat: Name of OVL file without extension
+                    if (!getNextString(ref outStream, 33))
+                        return false;
+
+                    //Z-Order, 1-4
+                    if (!getNextObject<short>(ref outStream, enumType: Enums.z))
+                        return false;
+
+                    if (getNextLine() != "BeginCount int")
+                    {
+                        Console.WriteLine($"Unknown count contents: '{getLine()}'");
+                        return false;
+                    }
+
+                    //numDeps placeholder
+                    long numOVLsPlace = outStream.BaseStream.Position;
+                    outStream.Write((short)-1);
+                    short numOVLs = 0;
+
+                    while (getNextLine() != "EndCount int")
+                    {
+                        //Scene frame to show this ovl in
+                        if (!getObject<short>(ref outStream))
+                            return false;
+                        //Src rect
+                        if (!getNextObject<int>(ref outStream))
+                            return false;
+                        //Dest rect
+                        if (!getNextObject<int>(ref outStream))
+                            return false;
+                        numOVLs++;
+                    }
+
+                    long endOVLs = outStream.BaseStream.Position;
+                    outStream.Seek((int)numOVLsPlace, SeekOrigin.Begin);
+                    outStream.Write((short)numOVLs);
+                    outStream.Seek((int)endOVLs, SeekOrigin.Begin);
+                    break;
+
+                //AT_FLAGS_HS
+                //Hotspot that sets a flag
+                case 91:
+                    if (getNextLine() != "BeginCount RefSetFlag")
+                    {
+                        Console.WriteLine($"Unknown count contents: '{getLine()}'");
+                        return false;
+                    }
+
+                    //numFlags placeholder
+                    long numFlagsPlace = outStream.BaseStream.Position;
+                    outStream.Write((short)-1);
+                    short numFlags = 0;
+
+                    while (getNextLine() != "EndCount RefSetFlag")
+                    {
+                        //Flag to set
+                        if (!getObject<short>(ref outStream))
+                            return false;
+                        //Value to set
+                        if (!getNextObject<short>(ref outStream, Enums.tf))
+                            return false;
+                        numFlags++;
+                    }
+
+                    long endFlags = outStream.BaseStream.Position;
+                    outStream.Seek((int)numFlagsPlace, SeekOrigin.Begin);
+                    outStream.Write((short)numFlags);
+                    outStream.Seek((int)endFlags, SeekOrigin.Begin);
+
+                    //Set hover cursor
+                    if (!getNextObject<int>(ref outStream, Enums.cursor))
+                        return false;
+
+                    if (getNextLine() != "BeginCount long")
+                    {
+                        Console.WriteLine($"Unknown count contents: '{getLine()}'");
+                        return false;
+                    }
+
+                    //numDeps placeholder
+                    long numHotsPlace = outStream.BaseStream.Position;
+                    outStream.Write((short)-1);
+                    short numHots = 0;
+
+                    //TODO: convert counts to lambdas?
+                    while (getNextLine() != "EndCount long")
+                    {
+                        //Frame hotspot is active in
+                        if (!getObject<short>(ref outStream))
+                            return false;
+                        //screen rect
+                        if (!getNextObject<int>(ref outStream))
+                            return false;
+                        numHots++;
+                    }
+
+                    long endHots = outStream.BaseStream.Position;
+                    outStream.Seek((int)numHotsPlace, SeekOrigin.Begin);
+                    outStream.Write((short)numHots);
+                    outStream.Seek((int)endHots, SeekOrigin.Begin);
+                    break;
+
+                default:
+                    Console.WriteLine($"Unknown ACT chunk type:'{actType}' from:'{getLine()}' on line {pos}");
+                    return false;
+            }
+            return true;
         }
 
         private static string getNextLine()
@@ -284,6 +408,7 @@ namespace HIFFCompile
             }
 
             lines[pos] = lines[pos].Trim();
+            lines[pos] = Regex.Replace(lines[pos], @"\s+", " ");
             return lines[pos];
         }
 
@@ -297,57 +422,35 @@ namespace HIFFCompile
             returnedObject = -1;
 
             //Remember types get downcast by one so ND long is C int
-            string[] parts = System.Text.RegularExpressions.Regex.Split(getLine(), @"\s+");
-            if (parts[0] != "byte" && parts[0] != "int" && parts[0] != "long" && parts[0] != "RefDep" && parts[0] != "RefFlag")
+            //string[] parts = System.Text.RegularExpressions.Regex.Split(getLine(), @"\s+");
+            string line = getLine();
+            string keyword = line.Substring(0, line.IndexOf(' '));
+
+            //Should be one number unless rect. 0,0,0,0
+            List<string> operand = new List<string>();
+            operand.Add(line.Substring(line.IndexOf(' ')));
+            operand[0] = operand[0].Trim(' ');
+
+            if (Array.IndexOf(keywords, keyword) == -1)
             {
-                Console.WriteLine($"Invalid type: '{parts[0]}' on line {pos + 1}. Must be byte, int, long, or a keyword.");
+                Console.WriteLine($"Invalid type: '{keyword}' on line {pos + 1}. Must be a valid keyword.");
                 return false;
             }
 
-            int inEnum;
-            //Should be one number unless rect. 0,0,0,0
-            int numOfNums = 1;
-
-            //if not a number, either enum or syntax error
-            if (!int.TryParse(parts[1], out inEnum))
+            if (operand[0].Count(f => f == ',') == 3)
             {
-                if (enumType != null)
-                {
-                    inEnum = Array.FindIndex(enumType, x => x.Contains(parts[1]));
-                    if (inEnum == -1)
-                    {
-                        Console.WriteLine($"'{parts[1]}' on line {pos + 1} is not a number or enum value.");
-                        return false;
-                    }
-                }
-                else if (dictType != null)
-                {
-                    inEnum = Enums.ACT_Type.FirstOrDefault(x => x.Value == parts[1]).Key;
-                    if (inEnum == 0)
-                    {
-                        Console.WriteLine($"'{parts[1]}' on line {pos + 1} is not a number or 'ACT Type' value.");
-                        return false;
-                    }
-                }
-                else if (parts[1].Count(f => f == ',') == 3)
-                {
-                    numOfNums = 4;
-                }
-                //else if (parts[1].Count(f => f == ',') != 0)
-                else
-                {
-                    Console.WriteLine($"'{parts[1]}' on line {pos + 1}. Must contain either a number/enum value or a rect. 0,0,0,0");
-                    return false;
-                }
-                /*else
-                {
-                    Console.WriteLine($"'{parts[1]}' on line {pos + 1}. Must have a valid list or dictionary passed.");
-                    return false;
-                }*/
+                operand = operand[0].Split(',').ToList();
             }
 
-            for (int i = 0; i < numOfNums; i++)
+            int inEnum = -1;
+
+            //TODO: prints same values for 1,2,3,4
+            foreach (string item in operand)
             {
+                inEnum = parseObj(item, enumType, dictType);
+                if (inEnum == -1)
+                    return false;
+
                 if (typeof(T) == typeof(byte))
                     outStream.Write((byte)inEnum);
                 if (typeof(T) == typeof(short))
@@ -358,6 +461,39 @@ namespace HIFFCompile
 
             returnedObject = inEnum;
             return true;
+        }
+
+        private static int parseObj(string operand, string[] enumType, Dictionary<int, string> dictType)
+        {
+            int inEnum;
+            //if not a number, either enum or syntax error
+            if (!int.TryParse(operand, out inEnum))
+            {
+                if (enumType != null)
+                {
+                    inEnum = Array.FindIndex(enumType, x => x.Contains(operand));
+                    if (inEnum == -1)
+                    {
+                        Console.WriteLine($"'{operand}' on line {pos + 1} is not a number or enum value.");
+                        return -1;
+                    }
+                }
+                else if (dictType != null)
+                {
+                    inEnum = Enums.ACT_Type.FirstOrDefault(x => x.Value == operand).Key;
+                    if (inEnum == 0)
+                    {
+                        Console.WriteLine($"'{operand}' on line {pos + 1} is not a number or 'ACT Type' value.");
+                        return -1;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"'{operand}' on line {pos + 1}. Must contain either a number/enum value or a rect. i.e. 0,0,0,0");
+                    return -1;
+                }
+            }
+            return inEnum;
         }
 
         private static bool getNextObject<T>(ref BinaryWriter outStream, out int returnedObject, string[] enumType = null, Dictionary<int, string> dictType = null)
@@ -391,7 +527,7 @@ namespace HIFFCompile
             }
 
             //validate keyword
-            if (parts[0] != "RefAVF" && parts[0] != "RefSound" && parts[0] != "RefHif")
+            if (Array.IndexOf(stringKeywords, parts[0]) == -1)
             {
                 if (parts[0].Contains("[") && parts[0].Contains("]"))
                 {
@@ -400,7 +536,7 @@ namespace HIFFCompile
                 }
                 else
                 {
-                    Console.WriteLine($"Unknown keyword: '{parts[0]}' on line {pos + 1}. Must be char[x], RefAVF, RefHif, or RefSound");
+                    Console.WriteLine($"Unknown keyword: '{parts[0]}' on line {pos + 1}. Must be a valid keyword");
                     return false;
                 }
             }
@@ -433,13 +569,14 @@ namespace HIFFCompile
             return getString(ref outStream, length);
         }
 
-        private static void writeLength(ref BinaryWriter outStream, long placeholder)
+        private static int writeLength(ref BinaryWriter outStream, long placeholder)
         {
             long endChunk = outStream.BaseStream.Position;
             outStream.Seek((int)placeholder, SeekOrigin.Begin);
             int length = BinaryPrimitives.ReverseEndianness((int)(endChunk - placeholder - 4));
             outStream.Write(length);
             outStream.Seek((int)endChunk, SeekOrigin.Begin);
+            return length;
         }
     }
 }
