@@ -2,7 +2,7 @@
   "profiles": {
     "HIFFCompile": {
       "commandName": "Project",
-      "commandLineArgs": "S2326.htxt -v"
+      "commandLineArgs": "S6290.htxt -v"
     }
   }
 }

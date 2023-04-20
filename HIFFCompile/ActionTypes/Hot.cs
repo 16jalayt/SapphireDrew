@@ -6,11 +6,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HIFFCompile.Chunks
+namespace HIFFCompile.ActionTypes
 {
     internal class Hot
     {
-        public static bool FlagsHS(ref BinaryWriter outStream)
+        public static bool FlagsHS(ref BinaryWriter outStream, bool withHS)
         {
             if (InFile.GetNextLine() != "BeginCount RefSetFlag")
             {
@@ -39,37 +39,40 @@ namespace HIFFCompile.Chunks
             outStream.Write((short)numFlags);
             outStream.Seek((int)endFlags, SeekOrigin.Begin);
 
-            //Set hover cursor
-            if (!InFile.GetNextObject<int>(ref outStream, Enums.cursor))
-                return false;
-
-            if (InFile.GetNextLine() != "BeginCount long")
+            if (withHS)
             {
-                Console.WriteLine($"Unknown count contents: '{InFile.GetLine()}'");
-                return false;
-            }
-
-            //numDeps placeholder
-            long numHotsPlace = outStream.BaseStream.Position;
-            outStream.Write((short)-1);
-            short numHots = 0;
-
-            //TODO: convert counts to lambdas?
-            while (InFile.GetNextLine() != "EndCount long")
-            {
-                //Frame hotspot is active in
-                if (!InFile.GetObject<short>(ref outStream))
+                //Set hover cursor
+                if (!InFile.GetNextObject<int>(ref outStream, Enums.cursor))
                     return false;
-                //screen rect
-                if (!InFile.GetNextObject<int>(ref outStream))
-                    return false;
-                numHots++;
-            }
 
-            long endHots = outStream.BaseStream.Position;
-            outStream.Seek((int)numHotsPlace, SeekOrigin.Begin);
-            outStream.Write((short)numHots);
-            outStream.Seek((int)endHots, SeekOrigin.Begin);
+                if (InFile.GetNextLine() != "BeginCount long")
+                {
+                    Console.WriteLine($"Unknown count contents: '{InFile.GetLine()}'");
+                    return false;
+                }
+
+                //numDeps placeholder
+                long numHotsPlace = outStream.BaseStream.Position;
+                outStream.Write((short)-1);
+                short numHots = 0;
+
+                //TODO: convert counts to lambdas?
+                while (InFile.GetNextLine() != "EndCount long")
+                {
+                    //Frame hotspot is active in
+                    if (!InFile.GetObject<short>(ref outStream))
+                        return false;
+                    //screen rect
+                    if (!InFile.GetNextObject<int>(ref outStream))
+                        return false;
+                    numHots++;
+                }
+
+                long endHots = outStream.BaseStream.Position;
+                outStream.Seek((int)numHotsPlace, SeekOrigin.Begin);
+                outStream.Write((short)numHots);
+                outStream.Seek((int)endHots, SeekOrigin.Begin);
+            }
 
             return true;
         }

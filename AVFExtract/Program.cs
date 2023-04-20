@@ -59,8 +59,6 @@ namespace AVFExtract
             //Compression Type
             Helpers.AssertShortBE(InStream, 2);
 
-            string[] frameName;
-
             for (int i = 0; i < numEntries; i++)
             {
                 short frameNo = InStream.ReadShort("\r\rframeNo: ");
@@ -178,7 +176,7 @@ namespace AVFExtract
             if (numEntries > 1)
             {
                 Console.WriteLine("\n\nConverting AVF png frames to mp4. The console will lockup durring this process.");
-                Console.WriteLine(ExecuteFFMpeg($"-hide_banner -y -i {InStream.FileNameWithoutExtension}\\%d.png -r 15 {InStream.FileNameWithoutExtension}\\{InStream.FileNameWithoutExtension}.mp4"));
+                Console.WriteLine(ExecuteFFMpeg($"-hide_banner -y -i \"{InStream.FileNameWithoutExtension}\\%d.png\" -r 15 \"{InStream.FileNameWithoutExtension}\\{InStream.FileNameWithoutExtension}\".mp4"));
                 Console.WriteLine("Done.");
 
                 //FFMpegHelper.VerifyFFMpegExists(new FFOptions());

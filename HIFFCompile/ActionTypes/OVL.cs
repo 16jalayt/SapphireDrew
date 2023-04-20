@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HIFFCompile.Chunks
+namespace HIFFCompile.ActionTypes
 {
     internal class OVL
     {

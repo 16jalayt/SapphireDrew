@@ -97,13 +97,20 @@ namespace HIFFCompile
                     inEnum = Array.FindIndex(enumType, x => x.Contains(operand));
                     if (inEnum == -1)
                     {
-                        Console.WriteLine($"'{operand}' on line {pos + 1} is not a number or enum value.");
-                        return -1;
+                        if (enumType == Enums.tf)
+                        {
+                            inEnum = parseTF(operand);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"'{operand}' on line {pos + 1} is not a number or enum value.");
+                            return -1;
+                        }
                     }
                 }
                 else if (dictType != null)
                 {
-                    inEnum = Enums.ACT_Type.FirstOrDefault(x => x.Value == operand).Key;
+                    inEnum = dictType.FirstOrDefault(x => x.Value == operand).Key;
                     if (inEnum == 0)
                     {
                         Console.WriteLine($"'{operand}' on line {pos + 1} is not a number or 'ACT Type' value.");
@@ -138,10 +145,15 @@ namespace HIFFCompile
 
         public static bool GetString(ref BinaryWriter outStream, int length)
         {
-            string SceneDesc = GetLine();
+            //Make returned string optional
+            string temp = "";
+            return GetString(ref outStream, length, ref temp);
+        }
 
+        public static bool GetString(ref BinaryWriter outStream, int length, ref string value)
+        {
             //split input keyword and expression
-            string[] parts = System.Text.RegularExpressions.Regex.Split(GetLine(), @"\s+");
+            string[] parts = tokenize(GetLine());
 
             //Reassemble the quoted part of the string. If there are spaces, it will be split
             for (int i = 2; i < parts.Length; i++)
@@ -171,15 +183,26 @@ namespace HIFFCompile
                 return false;
             }
 
-            if (parts[1].Count(f => f == '\"') != 2)
+            //Make sure quoted unless reserved keyword
+            int numQuotes = parts[1].Count(f => f == '\"');
+            if (numQuotes != 2 && parts[1] != "NO_ART_SCENE")
             {
                 Console.WriteLine($"Expression must be in double quotes \"x\": '{parts[1]}' on line {pos + 1}");
                 return false;
             }
 
-            //Trim line
-            SceneDesc = SceneDesc.Substring(SceneDesc.IndexOf("\"") + 1);
-            SceneDesc = SceneDesc.Substring(0, SceneDesc.LastIndexOf("\""));
+            string SceneDesc;
+            if (numQuotes == 2)
+            {
+                //Trim line
+                SceneDesc = parts[1].Substring(parts[1].IndexOf("\"") + 1);
+                SceneDesc = SceneDesc.Substring(0, SceneDesc.LastIndexOf("\""));
+            }
+            else
+                SceneDesc = parts[1];
+
+            value = SceneDesc;
+
             SceneDesc = SceneDesc.PadRight(length, '\0');
             outStream.Write(Encoding.UTF8.GetBytes(SceneDesc));
 
@@ -190,6 +213,38 @@ namespace HIFFCompile
         {
             GetNextLine();
             return GetString(ref outStream, length);
+        }
+
+        public static bool GetNextString(ref BinaryWriter outStream, int length, ref string value)
+        {
+            GetNextLine();
+            return GetString(ref outStream, length, ref value);
+        }
+
+        public static string[] tokenize(string input)
+        {
+            return System.Text.RegularExpressions.Regex.Split(input, @"\s+");
+        }
+
+        public static int parseTF(string operand)
+        {
+            int inEnum;
+
+            inEnum = Array.FindIndex(Enums.tf, x => x.Contains(operand));
+            if (inEnum == -1)
+            {
+                inEnum = Array.FindIndex(Enums.tfCamel, x => x.Contains(operand));
+                if (inEnum == -1)
+                {
+                    inEnum = Array.FindIndex(Enums.tfLower, x => x.Contains(operand));
+                    if (inEnum == -1)
+                    {
+                        Console.WriteLine($"'{operand}' on line {pos + 1} is not True or False.");
+                        return -1;
+                    }
+                }
+            }
+            return inEnum;
         }
     }
 }

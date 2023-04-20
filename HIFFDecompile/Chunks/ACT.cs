@@ -343,7 +343,7 @@ namespace HIFFDecompile.Chunks
             writetext.WriteLine($"int     {Enums.soundChannel[chan]}");
             writetext.WriteLine($"long    {Enums.loop[loop]}");
             writetext.WriteLine($"int     {unknown}");
-            writetext.WriteLine($"byte    {Enums.tf[nextScene]}         // next scene before sound ends?");
+            writetext.WriteLine($"byte    {Enums.tfCamel[nextScene]}         // next scene before sound ends?");
             if (refScene == 9999)
                 writetext.WriteLine($"RefScene  NO_SCENE");
             else
@@ -358,7 +358,7 @@ namespace HIFFDecompile.Chunks
                 else
                     writetext.WriteLine($"RefSetFlag  {refSetFlags[i]}     // when sound begins");
 
-                writetext.WriteLine($"int     {Enums.tf[RefSetFlagTruths[i]]}");
+                writetext.WriteLine($"int     {Enums.tfCamel[RefSetFlagTruths[i]]}");
             }
             writetext.WriteLine($"EndCount  RefSetFlag");
             if (deps.Length > 0)
@@ -368,7 +368,7 @@ namespace HIFFDecompile.Chunks
                 {
                     writetext.WriteLine($"RefDep      {deps[i].depType}");
                     writetext.WriteLine($"RefFlag   {deps[i].depRefFlag}");
-                    writetext.WriteLine($"int     {Enums.tf[deps[i].depState]}");
+                    writetext.WriteLine($"int     {Enums.tfCamel[deps[i].depState]}");
                     writetext.WriteLine($"int     {Enums.depFlag[deps[i].depFlag]}");
                     writetext.WriteLine($"int     {deps[i].rect.p1x},{deps[i].rect.p1y},{deps[i].rect.p2x},{deps[i].rect.p2y}");
                 }
