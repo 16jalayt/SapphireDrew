@@ -294,7 +294,7 @@ namespace HIFFDecompile.Chunks
             //Unknown. volume?
             short unknown = InStream.ReadShort("Unknown: ");
 
-            //next scene before sound ends
+            //"next scene before sound ends?"
             byte nextScene = InStream.ReadByte("Next Scene: ");
 
             //Referenced scene

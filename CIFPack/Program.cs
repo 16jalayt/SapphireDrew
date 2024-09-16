@@ -4,7 +4,7 @@ using System.IO;
 
 namespace CIFPack
 {
-    internal class Program
+    internal static class Program
     {
         private static void Main(string[] args)
         {
@@ -15,7 +15,7 @@ namespace CIFPack
 
             if (args.Length < 2)
             {
-                Console.WriteLine("Usage is CIFExtract.exe [input filename or folder] gamenumber.");
+                Console.WriteLine("Usage is CIFPack.exe [input filename or folder] gamenumber.");
                 return;
             }
 
@@ -27,11 +27,11 @@ namespace CIFPack
 
             if (File.Exists(FileName))
             {
-                CIF.packCIFFile(FileName, gamenum);
+                CIF.PackCIFFile(FileName, gamenum);
             }
             else if (Directory.Exists(FileName))
             {
-                CIF.packCIFTree(FileName, gamenum);
+                CIF.PackCIFTree(FileName, gamenum);
             }
             else
             {

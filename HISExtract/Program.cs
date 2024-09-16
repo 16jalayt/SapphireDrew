@@ -53,7 +53,6 @@ namespace HISExtract
             if (version == 1)
             {
                 InStream.Seek(8);
-                //skip header info, as we just need to trim header off for ogg
                 //Contents of header:
                 //format should be 1 for pcm
                 //num channels 1 or 2
@@ -99,7 +98,6 @@ namespace HISExtract
                         OutStream.Write(blockAlign);
 
                         OutStream.Write(Encoding.UTF8.GetBytes("data"));
-                        OutStream.Write(fileLength);
 
                         OutStream.Write(InStream.ReadBytes(fileLength));
                     }

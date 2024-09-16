@@ -20,7 +20,12 @@ namespace HIFFDecompile
 	 * ssum and tsum checked against string
      * */
 
-    internal class Program
+    //QUOT chunk in boot is for easter egg
+    //ini set PlayerWonTheGame=StillWorkingOnIt to PlayerWonTheGame=AcedTheGame
+    //do shift-ctrl-tab-v for version info, now shows random quote.
+    //Not updated since stay tuned?
+
+    internal static class Program
     {
         private static void Main(string[] args)
         {

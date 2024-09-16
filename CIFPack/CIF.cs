@@ -5,20 +5,20 @@ namespace CIFPack
     internal static class CIF
     {
         //Logic to select which format to use
-        public static void packCIFTree(string FileName, int gamenum)
+        public static void PackCIFTree(string FileName, int gamenum)
         {
             if (gamenum == 32)
             {
                 //TODO:
-                Console.WriteLine("SEA not currently supported.");
-                //Console.WriteLine("Game number SEA does not pack it's resources. Creating loose files instead.");
+                //Console.WriteLine("SEA not currently supported.");
+                Console.WriteLine("Game SEA does not pack it's resources. Creating loose files instead.");
                 return;
             }
             else if (gamenum == 0)
             {
                 //TODO:
-                Console.WriteLine("VAM not currently supported.");
-                //Console.WriteLine("Game number VAM does not pack it's resources. Creating loose files instead.");
+                //Console.WriteLine("VAM not currently supported.");
+                Console.WriteLine("Game VAM does not pack it's resources. Creating loose files instead.");
                 return;
             }
 
@@ -36,7 +36,7 @@ namespace CIFPack
         }
 
         //Logic to select which format to use
-        public static void packCIFFile(string FileName, int gamenum)
+        public static void PackCIFFile(string FileName, int gamenum)
         {
             //SCK through SKULL are v2
             if (gamenum >= 1 && gamenum <= 17)
@@ -47,7 +47,7 @@ namespace CIFPack
             //VEN through LIES are v3
             if (gamenum >= 18 && gamenum <= 31)
             {
-                V3.generateCIFChunk(FileName, gamenum);
+                V3.generateCIFFile(FileName, gamenum);
             }
         }
     }

@@ -2,7 +2,7 @@
   "profiles": {
     "AVFExtract": {
       "commandName": "Project",
-      "commandLineArgs": "CEM_TombStairs_ANIM.avf"
+      "commandLineArgs": "\"KEN_Dogs1 ANIM_.avf\""
     }
   }
 }

@@ -4,7 +4,7 @@ using System.IO;
 
 namespace CIFExtract
 {
-    internal class Program
+    internal static class Program
     {
         //TODO: cal files
         private static void Main(string[] args)
@@ -14,10 +14,27 @@ namespace CIFExtract
             Console.WriteLine($"EXPEREMENTAL\n");
             //Console.WriteLine($"UNVALIDATED\n");
 
+            if (!OperatingSystem.IsWindows())
+            {
+                Console.WriteLine("Currently only supported on Windows due to dependency on luac.exe. Exiting...");
+                return;
+            }
+
             if (args.Length < 1)
             {
                 Console.WriteLine("Usage is CIFExtract.exe filename.");
                 return;
+            }
+
+            //TODO: -h help
+
+            if (args.Length == 2 && args[1] == "-r")
+            {
+                CIF.dontdec = true;
+            }
+            if (args.Length == 2 && args[1] == "-c")
+            {
+                CIF.keepcif = true;
             }
 
             string FileName = args[0];

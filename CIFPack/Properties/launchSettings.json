@@ -2,7 +2,7 @@
   "profiles": {
     "CIFPack": {
       "commandName": "Project",
-      "commandLineArgs": "TUT_DESKCU_TXT_OVL.png 22"
+      "commandLineArgs": "testpack 22"
     }
   }
 }

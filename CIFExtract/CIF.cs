@@ -12,6 +12,9 @@ namespace CIFExtract
     //CIF stands for: Compressed Information Format
     internal class CIF
     {
+        public static bool dontdec = false;
+        public static bool keepcif = false;
+
         //Variables should be unchanged for rest of cif. Will be set on first run. Program should only run with one cif file.
         private static Boolean Venice = false;
 
@@ -211,6 +214,24 @@ namespace CIFExtract
         {
             InStream.Seek(cif.filePointer);
 
+            if (keepcif)
+            {
+                cif.fileExtension = GetExtension(InStream, cif);
+                string cifName = cif.fileName + cif.fileExtension;
+                Console.WriteLine($"Extracting: {cifName}");
+
+                long begining = InStream.Position();
+                InStream.Skip(0x2c);
+                cif.DecompressedLength = InStream.ReadInt();
+                InStream.Seek(begining);
+
+                cif.contents = InStream.ReadBytes(cif.DecompressedLength);
+
+                //TODO: put raw if v2
+                Helpers.Write(InStream.FilePath, cifName, cif.contents);
+                return;
+            }
+
             if (verMajor == 3)
             {
                 //CIF FILE HerInteractive
@@ -295,6 +316,7 @@ namespace CIFExtract
                     TGA T = new TGA(cif.contents);
                     //uncomment to test tga before convert to png
                     //T.Save(InStream.FileNameWithoutExtension + "//" + cif.fileName + ".tga");
+                    //Look into https://github.com/iron-software/IronSoftware.System.Drawing
                     Bitmap bmp = T.ToBitmap();
                     //Green is transparent in rect. Red means out of rect
                     bmp.MakeTransparent(System.Drawing.Color.FromArgb(0, 255, 0));
@@ -320,7 +342,7 @@ namespace CIFExtract
                 outRaw = Helpers.Write(InStream.FilePath, outName, cif.contents);
 
             //LUAC
-            if (cif.fileExtension == ".luac")
+            if (cif.fileExtension == ".luac" && !dontdec)
             {
                 ProcessStartInfo startInfo = new ProcessStartInfo();
                 startInfo.CreateNoWindow = false;
@@ -374,6 +396,9 @@ namespace CIFExtract
 	     * DECAL --  image that IS used as a transparent overlay
 	     * DATA  --  non-image data such as the Cif Listing file.
 		 */
+
+            if (keepcif)
+                return ".cif";
 
             //2 is an OVL file or overlay. A sprite that goes on top of a scene. Usually a pickup or interactable.
             if (cif.FileType == 2)

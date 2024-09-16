@@ -3,6 +3,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
@@ -77,9 +78,12 @@ namespace AVFExtract
 
                 byte[] outData = Compression.decompressLZSS(compressed);
 
+                //File.WriteAllBytes("test.dat", outData);
+                //System.Environment.Exit(1);
+
                 //possibly wrong colorspace but simple and same final as old extractor?
                 //Thought was rgb565 works as bgra5551
-                var image = Image.LoadPixelData<Bgra5551>(outData, width, height);
+                var image = Image.LoadPixelData<SixLabors.ImageSharp.PixelFormats.Bgra5551>(outData, width, height);
                 var encd = new PngEncoder
                 {
                     ColorType = PngColorType.Rgb
@@ -97,8 +101,7 @@ namespace AVFExtract
                 //image.Save("barbasic.bmp");
 
                 //System.drawing attempt
-                /*
-                Bitmap pic = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
+                /*Bitmap pic = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
 
                 //fonvert from 555 (565?) to rgb colorspace manually
                 int colR;
@@ -132,41 +135,46 @@ namespace AVFExtract
                 pic.Save("test.png");*/
 
                 //Imagesharp attempt
-                /*
-                                //fonvert from 555 to rgb colorspace manually
-                                int colR;
-                                int colG;
-                                int colB;
-                                //Texture2D texture = new Texture2D(width, height, TextureFormat.RGB24, false);
-                                // List<Int16> outColors = new List<Int16>();
-                                Color[] outColors = new Color[outData.Length / 2];
+                /*List<byte> list = new List<byte>();
+                //fonvert from 555 to rgb colorspace manually
+                int colR;
+                int colG;
+                int colB;
+                //Texture2D texture = new Texture2D(width, height, TextureFormat.RGB24, false);
+                // List<Int16> outColors = new List<Int16>();
+                //Color[] outColors = new Color[outData.Length / 2];
 
-                                for (int j = 0; j < outData.Length; j += 2)
-                                {
-                                    colR = (outData[j + 1] & 0x7C) << 1;
-                                    colG = (outData[j + 1] & 0x03) << 6 | (outData[j] & 0xE0) >> 2;
-                                    colB = (outData[j] & 0x1F) << 3;
+                for (int j = 0; j < outData.Length; j += 2)
+                {
+                    colR = (outData[j + 1] & 0x7C) << 1;
+                    colG = (outData[j + 1] & 0x03) << 6 | (outData[j] & 0xE0) >> 2;
+                    colB = (outData[j] & 0x1F) << 3;
 
-                                    colR |= colR >> 5;
-                                    colG |= colG >> 5;
-                                    colB |= colB >> 5;
-
-                                    outColors[j / 2] = Color.FromArgb((byte)colR, (byte)colG, (byte)colB);
-                                }
-
-                                var image = Image.LoadPixelData<Rgba32>(outColors, width, height);
-                                image.Save("bar.jpg");*/
+                    colR |= colR >> 5;
+                    colG |= colG >> 5;
+                    colB |= colB >> 5;
+                    list.Add((byte)colR);
+                    list.Add((byte)colG);
+                    list.Add((byte)colB);
+                    //outColors[j / 2] = Color.FromRgb((byte)colR, (byte)colG, (byte)colB);
+                }
+                File.WriteAllBytes("test.bmp", list.ToArray());
+                System.Environment.Exit(1);
+                //var image2 = Image.LoadPixelData<Rgb24>(outColors, width, height);
+                //image2.Save("bar.jpg");*/
 
                 //if multiple frames create a subfolder
                 if (numEntries > 1)
                 {
                     //TODO issue with pwd. should specify path everywhere
                     Directory.CreateDirectory(InStream.FileNameWithoutExtension);
-                    image.Save($"{InStream.FileNameWithoutExtension}\\{frameNo}.png", encd);
+                    //image.Save($"{InStream.FileNameWithoutExtension}\\{frameNo}.png", encd);
+                    image.Save($"{InStream.FileNameWithoutExtension}\\{frameNo}.bmp");
                 }
                 else
                 {
-                    image.Save($"{InStream.FileNameWithoutExtension}.png", encd);
+                    //image.Save($"{InStream.FileNameWithoutExtension}.png", encd);
+                    image.Save($"{InStream.FileNameWithoutExtension}.bmp");
                 }
 
                 InStream.Seek(placeholder);
