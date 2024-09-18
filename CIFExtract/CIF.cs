@@ -113,6 +113,12 @@ namespace CIFExtract
             nameLength = -1;
             getNameLength(InStream);
 
+            if (nameLength == -1)
+            {
+                Console.WriteLine($"Unknown game version. Aborting...");
+                return;
+            }
+
             //Done testing name length. Now parse name table.
             for (int i = 0; i < count; i++)
             {
@@ -129,45 +135,57 @@ namespace CIFExtract
                 //3 only has name and pointer
                 else if (verMajor != 3)
                 {
-                    //TODO: sck
                     cif.FileIndex = InStream.ReadShort();
+                    Console.WriteLine("idx" + InStream.Position());
 
-                    //attempt to read offset. 0 man, off new
-                    cif.filePointer = InStream.ReadInt();
-
-                    //set to variable to debug
-                    int unknown1;
-                    //bool older = false;
-                    //if early 2.1
-                    //TODO: Older is wrong?
-                    if (cif.filePointer != 0)
+                    if (verMajor == 2 && verMinor == 0)
                     {
-                        //Unknown FF
-                        _ = InStream.ReadShort();
-
-                        InStream.Skip(8);
+                        cif.width = InStream.ReadShort();
+                        //Unknown
+                        int unknownw = InStream.ReadShort();
+                        cif.height = InStream.ReadShort();
+                        //Unknown
+                        int unknownh = InStream.ReadShort();
                     }
                     else
                     {
-                        unknown1 = InStream.ReadInt();
-                        older = true;
+                        //attempt to read offset. 0 man, off new
+                        cif.filePointer = InStream.ReadInt();
+
+                        //set to variable to debug
+                        int unknown1;
+                        //bool older = false;
+                        //if early 2.1
+                        //TODO: Older is wrong?
+                        if (cif.filePointer != 0)
+                        {
+                            //Unknown FF
+                            unknown1 = InStream.ReadShort();
+
+                            InStream.Skip(8);
+                        }
+                        else
+                        {
+                            unknown1 = InStream.ReadInt();
+                            older = true;
+                        }
+
+                        //For TGA header
+                        cif.XOrigin = InStream.ReadInt();
+                        cif.YOrigin = InStream.ReadInt();
+
+                        cif.XStart = InStream.ReadInt();
+                        cif.YStart = InStream.ReadInt();
+                        cif.XEnd = InStream.ReadInt();
+                        cif.YEnd = InStream.ReadInt();
+
+                        cif.width = InStream.ReadShort();
+                        //Unknown
+                        int unknownw = InStream.ReadShort();
+                        cif.height = InStream.ReadShort();
+                        //Unknown
+                        int unknownh = InStream.ReadShort();
                     }
-
-                    //For TGA header
-                    cif.XOrigin = InStream.ReadInt();
-                    cif.YOrigin = InStream.ReadInt();
-
-                    cif.XStart = InStream.ReadInt();
-                    cif.YStart = InStream.ReadInt();
-                    cif.XEnd = InStream.ReadInt();
-                    cif.YEnd = InStream.ReadInt();
-
-                    cif.width = InStream.ReadShort();
-                    //Unknown
-                    int unknownw = InStream.ReadShort();
-                    cif.height = InStream.ReadShort();
-                    //Unknown
-                    int unknownh = InStream.ReadShort();
 
                     //If early 2.1
                     if (cif.filePointer == 0)
@@ -183,7 +201,7 @@ namespace CIFExtract
                     //Is file data or picture
                     cif.FileType = InStream.ReadByte();
 
-                    //Unknown
+                    //Byte align?
                     if (older)
                         _ = InStream.ReadShort();
 
@@ -257,6 +275,14 @@ namespace CIFExtract
                 //cif.CompressedLength = cif.DecompressedLength;
 
                 cif.contents = InStream.ReadBytes(cif.DecompressedLength);
+
+                //Convert the green to alpha
+                //TODO: find faster way
+                //TODO: command line option to enable/ make seperate func
+                if (cif.fileExtension == ".png")
+                {
+                    cif.contents = ConvertImage(cif.contents, true);
+                }
             }
             else
             {
@@ -314,41 +340,9 @@ namespace CIFExtract
                         cif.contents = stream.ToArray();
                     }
 
-                    /* TGA T = new TGA(cif.contents);
-                     //uncomment to test tga before convert to png
-                     //T.Save(InStream.FileNameWithoutExtension + "//" + cif.fileName + ".tga");
-                     //Look into https://github.com/iron-software/IronSoftware.System.Drawing
-                     Bitmap bmp = T.ToBitmap();
-                     //Green is transparent in rect. Red means out of rect
-                     bmp.MakeTransparent(System.Drawing.Color.FromArgb(0, 255, 0));
-                     using (var stream = new MemoryStream())
-                     {
-                         //TODO: make portable with imagesharp or other
-                         //Windows specific doesn't matter because unluac is an exe right now
-                         bmp.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
-                         cif.contents = stream.ToArray();
-                     }
-                     cif.fileExtension = ".png";*/
-                    using (Image<Rgba32> image = Image.Load<Rgba32>(cif.contents))
-                    using (var stream = new MemoryStream())
-                    {
-                        image.ProcessPixelRows(accessor =>
-                        {
-                            for (int y = 0; y < accessor.Height; y++)
-                            {
-                                Span<Rgba32> pixelRow = accessor.GetRowSpan(y);
-                                foreach (ref Rgba32 pixel in pixelRow)
-                                {
-                                    if (pixel.Rgb.Equals(Color.FromRgb(0, 255, 0)))
-                                        pixel = Color.Transparent;
-                                }
-                            }
-                        });
-
-                        image.SaveAsPng(stream);
-                        cif.contents = stream.ToArray();
-                    }
+                    //cif.contents are still tga, but imagesharp doesn't care and we still need to do alpha conversion anyway
                     cif.fileExtension = ".png";
+                    cif.contents = ConvertImage(cif.contents, true);
                 }
             }
 
@@ -415,6 +409,31 @@ namespace CIFExtract
                     Console.WriteLine("Failed to launch unluac:\n" + e);
                 }
             }
+        }
+
+        private static byte[]? ConvertImage(byte[]? imageData, bool keyAlpha = true)
+        {
+            using Image<Rgba32> image = Image.Load<Rgba32>(imageData);
+            using var stream = new MemoryStream();
+
+            if (keyAlpha)
+            {
+                image.ProcessPixelRows(accessor =>
+                {
+                    for (int y = 0; y < accessor.Height; y++)
+                    {
+                        Span<Rgba32> pixelRow = accessor.GetRowSpan(y);
+                        foreach (ref Rgba32 pixel in pixelRow)
+                        {
+                            if (pixel.Rgb.Equals(Color.FromRgb(0, 255, 0)))
+                                pixel = Color.Transparent;
+                        }
+                    }
+                });
+            }
+
+            image.SaveAsPng(stream);
+            return stream.ToArray();
         }
 
         private static string GetExtension(BetterBinaryReader InStream, CIFObject cif)

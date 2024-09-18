@@ -2,7 +2,7 @@
   "profiles": {
     "CIFExtract": {
       "commandName": "Project",
-      "commandLineArgs": "\"PUI_Default.dat\" -c"
+      "commandLineArgs": "\"1 sck.dat\""
     }
   }
 }

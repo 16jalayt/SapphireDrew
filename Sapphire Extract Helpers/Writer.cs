@@ -6,7 +6,12 @@ namespace Sapphire_Extract_Helpers
     internal static class Writer
     {
         public static bool OverwriteAll;
+
+        //TODO: implement
         public static bool AutoRename;
+
+        //TODO: implement
+        public static bool OverwriteNone;
 
         public static string WriteFile(string filePath, string fileName, byte[] fileContents, bool subdir)
         {
@@ -31,8 +36,10 @@ namespace Sapphire_Extract_Helpers
                 if (File.Exists(outPath))
                 {
                     //Prompt user
-                    Console.WriteLine("File exists. Overwrite (yes,no,all):");
+                    Console.WriteLine("File exists. Overwrite (yes,all,no,skip all):");
                     string? response = Console.ReadLine();
+                    if (response != null)
+                        response = response.ToLower();
                     switch (response)
                     {
                         case "y":
@@ -40,13 +47,19 @@ namespace Sapphire_Extract_Helpers
                             File.WriteAllBytes(outPath, fileContents);
                             break;
 
+                        case "a":
+                        case "all":
+                            OverwriteAll = true;
+                            File.WriteAllBytes(outPath, fileContents);
+                            break;
+
                         case "n":
                         case "no":
                             break;
 
-                        case "a":
-                        case "all":
-                            OverwriteAll = true;
+                        case "s":
+                        case "skip":
+                            OverwriteNone = true;
                             File.WriteAllBytes(outPath, fileContents);
                             break;
 
