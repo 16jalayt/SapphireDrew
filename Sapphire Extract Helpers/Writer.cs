@@ -13,12 +13,12 @@ namespace Sapphire_Extract_Helpers
             string outPath;
             if (subdir)
             {
-                outPath = Path.Combine(Path.GetDirectoryName(filePath), Path.GetFileNameWithoutExtension(filePath), fileName);
-                Directory.CreateDirectory(Path.GetDirectoryName(outPath));
+                outPath = Path.Combine(Path.GetDirectoryName(filePath)!, Path.GetFileNameWithoutExtension(filePath), fileName);
+                Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
             }
             else
             {
-                outPath = Path.Combine(Path.GetDirectoryName(filePath), fileName);
+                outPath = Path.Combine(Path.GetDirectoryName(filePath)!, fileName);
             }
             //Log.Debug("output file: " + outPath);
 
@@ -32,7 +32,7 @@ namespace Sapphire_Extract_Helpers
                 {
                     //Prompt user
                     Console.WriteLine("File exists. Overwrite (yes,no,all):");
-                    string response = Console.ReadLine();
+                    string? response = Console.ReadLine();
                     switch (response)
                     {
                         case "y":

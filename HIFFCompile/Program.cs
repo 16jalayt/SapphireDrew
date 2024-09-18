@@ -7,7 +7,7 @@ using System.Text;
 
 namespace HIFFCompile
 {
-    internal class Program
+    internal static class Program
     {
         //TODO:delete partial file on faliure
 
@@ -37,19 +37,22 @@ namespace HIFFCompile
 
             Console.WriteLine($"Compiling: '{inFile}'\n");
 
-            //only used to get full path of input
+            //Only used to get full path of input
             BetterBinaryReader testFile = new BetterBinaryReader(inFile);
 
-            FileInfo outFile = new FileInfo(Path.GetDirectoryName(testFile.FilePath) + "/Output/" + Path.GetFileNameWithoutExtension(testFile.FilePath) + ".hiff");
+            FileInfo outFile = new(Path.GetDirectoryName(testFile.FilePath) + "/Output/" + Path.GetFileNameWithoutExtension(testFile.FilePath) + ".hiff");
             testFile.Dispose();
-            outFile.Directory.Create();
-            BinaryWriter outStream = new BinaryWriter(new FileStream(outFile.FullName, FileMode.Create), Encoding.UTF8);
+            if (outFile.Directory != null)
+            {
+                outFile.Directory.Create();
+                BinaryWriter outStream = new BinaryWriter(new FileStream(outFile.FullName, FileMode.Create), Encoding.UTF8);
 
-            InFile.lines = File.ReadLines(inFile).ToArray();
+                InFile.lines = File.ReadLines(inFile).ToArray();
 
-            ParseHIFF.Parse(olderGame, ref outStream, inFile);
+                ParseHIFF.Parse(olderGame, ref outStream, inFile);
 
-            outStream.Close();
+                outStream.Close();
+            }
         }
     }
 }

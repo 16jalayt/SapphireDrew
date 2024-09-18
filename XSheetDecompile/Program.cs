@@ -4,7 +4,7 @@ using System.IO;
 
 namespace XSheetDecompile
 {
-    internal class Program
+    internal static class Program
     {
         private static void Main(string[] args)
         {
@@ -80,7 +80,7 @@ namespace XSheetDecompile
             InStream.Dispose();
 
             FileInfo file = new FileInfo(Path.GetDirectoryName(InStream.FilePath) + "/Output/" + Path.GetFileNameWithoutExtension(InStream.FilePath) + ".xs1");
-            file.Directory.Create();
+            file.Directory?.Create();
             using (StreamWriter writetext = new StreamWriter(file.FullName))
             {
                 writetext.WriteLine("XS1\n[Options]\nFPS=15");

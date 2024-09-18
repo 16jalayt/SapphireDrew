@@ -1,16 +1,14 @@
-﻿using Crews.Utility.TgaSharp;
-using Sapphire_Extract_Helpers;
+﻿using Sapphire_Extract_Helpers;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 
 namespace CIFExtract
 {
     //CIF stands for: Compressed Information Format
-    internal class CIF
+    internal static class CIF
     {
         public static bool dontdec = false;
         public static bool keepcif = false;
@@ -88,7 +86,7 @@ namespace CIFExtract
             //Number of name table entries
             int count = InStream.ReadShort();
             //only nonzero in cal
-            int unknownhead = InStream.ReadShort();
+            _ = InStream.ReadShort();
 
             Console.WriteLine($"Extracting '{count}' files.");
 
@@ -308,23 +306,46 @@ namespace CIFExtract
                             //one attribute bit. does? without it flips upsidedown
                             writer.Write((byte)0x20);
                             //writer.Write((byte)0b00100001);
-                            writer.Write(cif.contents);
+                            if (cif.contents != null)
+                                writer.Write(cif.contents);
+                            else
+                                Console.WriteLine("The contents of this CIF are empty.");
                         }
                         cif.contents = stream.ToArray();
                     }
 
-                    TGA T = new TGA(cif.contents);
-                    //uncomment to test tga before convert to png
-                    //T.Save(InStream.FileNameWithoutExtension + "//" + cif.fileName + ".tga");
-                    //Look into https://github.com/iron-software/IronSoftware.System.Drawing
-                    Bitmap bmp = T.ToBitmap();
-                    //Green is transparent in rect. Red means out of rect
-                    bmp.MakeTransparent(System.Drawing.Color.FromArgb(0, 255, 0));
+                    /* TGA T = new TGA(cif.contents);
+                     //uncomment to test tga before convert to png
+                     //T.Save(InStream.FileNameWithoutExtension + "//" + cif.fileName + ".tga");
+                     //Look into https://github.com/iron-software/IronSoftware.System.Drawing
+                     Bitmap bmp = T.ToBitmap();
+                     //Green is transparent in rect. Red means out of rect
+                     bmp.MakeTransparent(System.Drawing.Color.FromArgb(0, 255, 0));
+                     using (var stream = new MemoryStream())
+                     {
+                         //TODO: make portable with imagesharp or other
+                         //Windows specific doesn't matter because unluac is an exe right now
+                         bmp.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+                         cif.contents = stream.ToArray();
+                     }
+                     cif.fileExtension = ".png";*/
+                    using (Image<Rgba32> image = Image.Load<Rgba32>(cif.contents))
                     using (var stream = new MemoryStream())
                     {
-                        //TODO: make portable with imagesharp or other
-                        //Windows specific doesn't matter because unluac is an exe right now
-                        bmp.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+                        image.ProcessPixelRows(accessor =>
+                        {
+                            for (int y = 0; y < accessor.Height; y++)
+                            {
+                                Span<Rgba32> pixelRow = accessor.GetRowSpan(y);
+                                foreach (ref Rgba32 pixel in pixelRow)
+                                {
+                                    if (pixel.Rgb.Equals(Color.FromRgb(0, 255, 0)))
+                                        pixel = Color.Transparent;
+                                }
+                            }
+                        });
+
+                        image.SaveAsPng(stream);
                         cif.contents = stream.ToArray();
                     }
                     cif.fileExtension = ".png";
@@ -334,12 +355,17 @@ namespace CIFExtract
             Console.WriteLine($"Extracting: {cif.fileName}{cif.fileExtension}");
 
             string outName = cif.fileName + cif.fileExtension;
-            string outRaw;
-            //If cif file outside of tree
-            if (cif.filePointer == 0)
-                outRaw = Helpers.Write(InStream.FilePath, outName, cif.contents, false);
+            string outRaw = "";
+            if (cif.contents != null)
+            {
+                //If cif file outside of tree
+                if (cif.filePointer == 0)
+                    outRaw = Helpers.Write(InStream.FilePath, outName, cif.contents, false);
+                else
+                    outRaw = Helpers.Write(InStream.FilePath, outName, cif.contents);
+            }
             else
-                outRaw = Helpers.Write(InStream.FilePath, outName, cif.contents);
+                Console.WriteLine("The contents of this CIF are empty.");
 
             //LUAC
             if (cif.fileExtension == ".luac" && !dontdec)
@@ -357,9 +383,10 @@ namespace CIFExtract
                 {
                     // Start the process with the info we specified.
                     // Call WaitForExit and then the using statement will close.
-                    using (Process process = Process.Start(startInfo))
+                    using Process? process = Process.Start(startInfo);
+                    if (process != null)
                     {
-                        var outputStream = new StreamWriter(Path.Combine(Path.GetDirectoryName(outRaw), cif.fileName + ".lua"));
+                        var outputStream = new StreamWriter(Path.Combine(Path.GetDirectoryName(outRaw)!, cif.fileName + ".lua"));
                         //File.WriteLine("test.txt", exeProcess.StandardOutput.ReadToEnd());
                         process.OutputDataReceived += new DataReceivedEventHandler((sender, e) =>
                         {
@@ -380,6 +407,8 @@ namespace CIFExtract
 
                         File.Delete(outRaw);
                     }
+                    else
+                        Console.WriteLine("Unable to start unluac process.");
                 }
                 catch (Exception e)
                 {
@@ -431,13 +460,15 @@ namespace CIFExtract
                 }
                 else
                 {
-                    if (cif.contents[0] == 88)
-                        return ".xs1";
-                    //dat script file
-                    else if (cif.contents[0] == 68)
-                        return ".hiff";
-                    else
-                        return ".unk";
+                    if (cif.contents != null)
+                    {
+                        if (cif.contents[0] == 88)
+                            return ".xs1";
+                        //dat script file
+                        else if (cif.contents[0] == 68)
+                            return ".hiff";
+                    }
+                    return ".unk";
                 }
             }
             //ERRATA: extension is officially .xs1. I have modified this to differentiate compiled vs uncompiled.
@@ -448,7 +479,7 @@ namespace CIFExtract
             else if (cif.FileType == 4)
             {
                 if (cif.fileName == ".")
-                    return null;
+                    return "";
                 else
                     return ".unk";
             }

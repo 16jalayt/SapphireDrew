@@ -19,20 +19,20 @@ namespace Sapphire_Extract_Helpers
          * produce the output into the given out array.
          */
 
-        public static byte[] decompressLZSS(byte[] data)
+        public static byte[]? decompressLZSS(byte[]? data)
         {
-            int src = 0;
-            //int dst = 0;
-            List<byte> outdata = new List<byte>();
+            if (data == null)
+                return null;
 
-            int marker = 0;
+            List<byte> outdata = [];
+            int src = 0;
             int nextChar = 0xFEE;
-            int windowSize = 4096;
+            const int windowSize = 4096;
             byte[] slidingWindow = Enumerable.Repeat((byte)0x20, windowSize).ToArray();
 
             while (src < data.Length)
             {
-                marker = data[src++] & 0xFF;
+                int marker = data[src++] & 0xFF;
                 for (int i = 0; i < 8 && src < data.Length; i++)
                 {
                     bool type = (marker & (1 << i)) != 0;
@@ -47,7 +47,7 @@ namespace Sapphire_Extract_Helpers
                     {
                         int offset = data[src++] & 0xFF;
                         int len = data[src++] & 0xFF;
-                        offset = offset | (len & 0xF0) << 4;
+                        offset |= (len & 0xF0) << 4;
                         len = (len & 0x0F) + 3;
                         for (int j = 0; j < len; j++)
                         {

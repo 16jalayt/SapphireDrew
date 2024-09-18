@@ -58,7 +58,7 @@ namespace HIFFDecompile
             Console.WriteLine($"Printout of: '{InStream.FilePath}'\n");
 
             FileInfo file = new FileInfo(Path.GetDirectoryName(InStream.FilePath) + "/Output/" + Path.GetFileNameWithoutExtension(InStream.FilePath) + ".htxt");
-            file.Directory.Create();
+            file.Directory?.Create();
             StreamWriter writetext = new StreamWriter(file.FullName);
 
             DecompChunk(InStream, writetext);

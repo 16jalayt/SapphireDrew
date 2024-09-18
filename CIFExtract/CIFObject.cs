@@ -22,7 +22,7 @@
         public int width = 0;
         public int height = 0;
 
-        public byte[] compressed = null;
-        public byte[] contents = null;
+        public byte[]? compressed = null;
+        public byte[]? contents = null;
     }
 }

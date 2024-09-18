@@ -68,7 +68,7 @@ namespace Sapphire_Extract_Helpers
         public byte[] ReadBytes(int len, string msg = "")
         {
             byte[] data = _br.ReadBytes(len);
-            print(msg, data.ToString());
+            print(msg, Encoding.Default.GetString(data));
             return data;
         }
 
@@ -85,7 +85,7 @@ namespace Sapphire_Extract_Helpers
             byte[] data = ReadBytes(4);
             Array.Reverse(data);
             int dataout = BitConverter.ToInt32(data, 0);
-            print(msg, dataout.ToString());
+            print(msg, Encoding.Default.GetString(data));
             return dataout;
         }
 
@@ -94,7 +94,7 @@ namespace Sapphire_Extract_Helpers
             byte[] data = ReadBytes(2);
             Array.Reverse(data);
             short dataout = BitConverter.ToInt16(data, 0);
-            print(msg, dataout.ToString());
+            print(msg, Encoding.Default.GetString(data));
             return dataout;
         }
 
@@ -102,13 +102,13 @@ namespace Sapphire_Extract_Helpers
         {
             byte[] data = ReadBytes(len);
             Array.Reverse(data);
-            print(msg, data.ToString());
+            print(msg, Encoding.Default.GetString(data));
             return data;
         }
 
         public bool IsEOF()
         {
-            return this.Position() >= this.Length() ? true : false;
+            return Position() >= Length();
         }
 
         public Stream GetStream()

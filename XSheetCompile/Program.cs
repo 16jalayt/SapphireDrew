@@ -154,7 +154,7 @@ namespace XSheetCompile
 
             //Everything is in order. Time to write the output.
             FileInfo file = new FileInfo(Path.GetDirectoryName(FileName) + "/Output/" + Path.GetFileNameWithoutExtension(FileName) + ".xsheet");
-            file.Directory.Create();
+            file.Directory?.Create();
             BinaryWriter outStream = new BinaryWriter(new FileStream(file.FullName, FileMode.Create), Encoding.UTF8);
             //have to convert string to byte array to prevent string being prefixed by length automatically.
             outStream.Write(Encoding.UTF8.GetBytes("XSHEET HerInteractive"));

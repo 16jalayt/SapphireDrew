@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace HIFFCompile
 {
-    internal class InFile
+    internal static class InFile
     {
         //private static HashSet<string> keywords = new HashSet<string>
         //{ "byte", "int", "long", "RefDep", "RefFlag", "RefOvlStat" };
@@ -16,8 +16,9 @@ namespace HIFFCompile
 
         public static string[] stringKeywords = { "RefAVF", "RefSound", "RefHif", "RefOvlStat" };
 
-        public static string[] lines;
+        public static string[] lines = Array.Empty<string>();
         public static int pos = 0;
+        private static readonly Regex _regex = new Regex(@"\s+");
 
         public static string GetNextLine()
         {
@@ -41,7 +42,7 @@ namespace HIFFCompile
             return lines[pos];
         }
 
-        public static bool GetObject<T>(ref BinaryWriter outStream, out int returnedObject, string[] enumType = null, Dictionary<int, string> dictType = null)
+        public static bool GetObject<T>(ref BinaryWriter outStream, out int returnedObject, string[]? enumType = null, Dictionary<int, string>? dictType = null)
         {
             returnedObject = -1;
 
@@ -87,7 +88,7 @@ namespace HIFFCompile
             return true;
         }
 
-        public static int ParseObj(string operand, string[] enumType, Dictionary<int, string> dictType)
+        public static int ParseObj(string operand, string[]? enumType, Dictionary<int, string>? dictType)
         {
             //if not a number, either enum or syntax error
             if (!int.TryParse(operand, out int inEnum))
@@ -126,19 +127,19 @@ namespace HIFFCompile
             return inEnum;
         }
 
-        public static bool GetNextObject<T>(ref BinaryWriter outStream, out int returnedObject, string[] enumType = null, Dictionary<int, string> dictType = null)
+        public static bool GetNextObject<T>(ref BinaryWriter outStream, out int returnedObject, string[]? enumType = null, Dictionary<int, string>? dictType = null)
         {
             GetNextLine();
             returnedObject = -1;
             return GetObject<T>(ref outStream, out returnedObject, enumType, dictType);
         }
 
-        public static bool GetObject<T>(ref BinaryWriter outStream, string[] enumType = null, Dictionary<int, string> dictType = null)
+        public static bool GetObject<T>(ref BinaryWriter outStream, string[]? enumType = null, Dictionary<int, string>? dictType = null)
         {
             return GetObject<T>(ref outStream, out _, enumType, dictType);
         }
 
-        public static bool GetNextObject<T>(ref BinaryWriter outStream, string[] enumType = null, Dictionary<int, string> dictType = null)
+        public static bool GetNextObject<T>(ref BinaryWriter outStream, string[]? enumType = null, Dictionary<int, string>? dictType = null)
         {
             return GetNextObject<T>(ref outStream, out _, enumType, dictType);
         }
@@ -153,7 +154,7 @@ namespace HIFFCompile
         public static bool GetString(ref BinaryWriter outStream, int length, ref string value)
         {
             //split input keyword and expression
-            string[] parts = tokenize(GetLine());
+            string[] parts = Tokenize(GetLine());
 
             //Reassemble the quoted part of the string. If there are spaces, it will be split
             for (int i = 2; i < parts.Length; i++)
@@ -221,9 +222,9 @@ namespace HIFFCompile
             return GetString(ref outStream, length, ref value);
         }
 
-        public static string[] tokenize(string input)
+        public static string[] Tokenize(string input)
         {
-            return System.Text.RegularExpressions.Regex.Split(input, @"\s+");
+            return _regex.Split(input);
         }
 
         public static int parseTF(string operand)

@@ -62,13 +62,18 @@ namespace CIFPack
 
                 long offset = OutStream.BaseStream.Position;
 
-                Stream MemStream = generateCIFChunk(pathName, gamenum);
-                MemStream.Seek(0, SeekOrigin.Begin);
-                MemStream.CopyTo(OutStream.BaseStream);
-                //OutStream.Write(MemStream);
+                Stream? MemStream = generateCIFChunk(pathName, gamenum);
+                if (MemStream != null)
+                {
+                    MemStream.Seek(0, SeekOrigin.Begin);
+                    MemStream.CopyTo(OutStream.BaseStream);
+                    //OutStream.Write(MemStream);
 
-                TreeMeta.Add(new NameTableEntry { name = fileName, pos = offset });
-                MemStream.Close();
+                    TreeMeta.Add(new NameTableEntry { name = fileName, pos = offset });
+                    MemStream.Close();
+                }
+                else
+                    Console.WriteLine($"GenerateCIFChunk returned null.");
             }
 
             OutStream.Write((int)TreeMeta.Count);
@@ -88,16 +93,21 @@ namespace CIFPack
 
         public static void generateCIFFile(string fileName, int gamenum)
         {
-            Stream MemStream = generateCIFChunk(fileName, gamenum);
+            Stream? MemStream = generateCIFChunk(fileName, gamenum);
             FileStream FileStream = new FileStream(@Path.GetFileNameWithoutExtension(fileName) + ".cif", FileMode.Create);
-            MemStream.Seek(0, SeekOrigin.Begin);
-            MemStream.CopyTo(FileStream);
+            if (MemStream != null)
+            {
+                MemStream.Seek(0, SeekOrigin.Begin);
+                MemStream.CopyTo(FileStream);
 
-            MemStream.Close();
-            FileStream.Close();
+                MemStream.Close();
+                FileStream.Close();
+            }
+            else
+                Console.WriteLine($"GenerateCIFChunk returned null.");
         }
 
-        public static Stream generateCIFChunk(string fileName, int gamenum)
+        public static Stream? generateCIFChunk(string fileName, int gamenum)
         {
             BetterBinaryReader InStream = new BetterBinaryReader(fileName);
             //BinaryWriter OutStream = new BinaryWriter(new FileStream(@Path.GetFileNameWithoutExtension(FileName) + ".cif", FileMode.Create));
@@ -203,35 +213,38 @@ namespace CIFPack
                 {
                     // Start the process with the info we specified.
                     // Call WaitForExit and then the using statement will close.
-                    using (Process process = Process.Start(startInfo))
+                    using Process? process = Process.Start(startInfo);
+                    if (process == null)
                     {
-                        process.Start();
-                        process.WaitForExit();
-                        process.Close();
-
-                        //Delete the lua file and reopen instraeam with luac file
-                        InStream.Dispose();
-                        //File.Delete(luaName);
-                        InStream = new BetterBinaryReader(luacName);
-
-                        //Type of file
-                        OutStream.Write((int)3);
-
-                        //Values used only for OVL
-                        OutStream.Write(new byte[12]);
-
-                        OutStream.Write((int)InStream.Length());
-                        //int len = (int)InStream.Length();
-                        byte[] luacContents = InStream.ReadBytes((int)InStream.Length());
-                        OutStream.Write(luacContents);
-
-                        //OutStream.Close();
-                        InStream.Dispose();
-                        //Delete temp compiled file
-                        File.Delete(luacName);
-                        //bypass other file writing
-                        return OutStream.BaseStream;
+                        Console.WriteLine("Unable to start unluac process.");
+                        return null;
                     }
+                    process.Start();
+                    process.WaitForExit();
+                    process.Close();
+
+                    //Delete the lua file and reopen instraeam with luac file
+                    InStream.Dispose();
+                    //File.Delete(luaName);
+                    InStream = new BetterBinaryReader(luacName);
+
+                    //Type of file
+                    OutStream.Write((int)3);
+
+                    //Values used only for OVL
+                    OutStream.Write(new byte[12]);
+
+                    OutStream.Write((int)InStream.Length());
+                    //int len = (int)InStream.Length();
+                    byte[] luacContents = InStream.ReadBytes((int)InStream.Length());
+                    OutStream.Write(luacContents);
+
+                    //OutStream.Close();
+                    InStream.Dispose();
+                    //Delete temp compiled file
+                    File.Delete(luacName);
+                    //bypass other file writing
+                    return OutStream.BaseStream;
                 }
                 catch (Exception e)
                 {

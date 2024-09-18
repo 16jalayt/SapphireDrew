@@ -84,7 +84,7 @@ namespace HIFFCompile
             //If depenency is shorthand
             if (InFile.lines[InFile.pos].StartsWith("if"))
             {
-                string[] tokens = InFile.tokenize(InFile.GetLine());
+                string[] tokens = InFile.Tokenize(InFile.GetLine());
 
                 for (int i = 1; i < tokens.Length; i += 2)
                 {
