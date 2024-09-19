@@ -109,6 +109,10 @@ namespace CIFExtract
             //Technically saving pos here is unnessesary, just needs to be defined out of loop
             long placeholder = InStream.Position();
 
+            //Not sure why need
+            if (verMajor == 2 && verMinor == 0)
+                placeholder -= 2;
+
             //LONG section doing tests for name length, as can change randomly
             nameLength = -1;
             getNameLength(InStream);
@@ -146,6 +150,7 @@ namespace CIFExtract
                         cif.height = InStream.ReadShort();
                         //Unknown
                         int unknownh = InStream.ReadShort();
+                        Console.WriteLine("h" + InStream.Position());
                     }
                     else
                     {
@@ -194,15 +199,15 @@ namespace CIFExtract
                     //Length of final file
                     cif.DecompressedLength = InStream.ReadInt();
                     //Unknown
-                    //TODO: right value. scumm says compression=2 might be wrong spot
                     int unknownlengths = InStream.ReadInt();
                     //Length of file in tree
                     cif.CompressedLength = InStream.ReadInt();
+                    Console.WriteLine("type" + InStream.Position());
                     //Is file data or picture
                     cif.FileType = InStream.ReadByte();
 
                     //Byte align?
-                    if (older)
+                    if (older || (verMajor == 2 && verMinor == 0))
                         _ = InStream.ReadShort();
 
                     placeholder = InStream.Position();
