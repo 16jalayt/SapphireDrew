@@ -50,10 +50,11 @@ namespace HIFFDecompile
             }
             BetterBinaryReader InStream = new BetterBinaryReader(FileName);
 
+            //TODO: somehow allow specify flags file to print names
             if (args.Length > 1 && args[1] == "-v" || args.Length > 2 && args[2] == "-v")
                 InStream.debugprint = true;
-            else if (args.Length > 1 && args[1] == "-l" || args.Length > 2 && args[2] == "-l")
-                InStream.debugprint = true;
+            if (args.Length > 1 && args[1] == "-l" || args.Length > 2 && args[2] == "-l")
+                Utils.preferLong = true;
 
             Console.WriteLine($"Printout of: '{InStream.FilePath}'\n");
 
@@ -87,15 +88,38 @@ namespace HIFFDecompile
                             int unknown1 = InStream.ReadIntBE();
                             if (unknown1 == 0)
                                 break;
+
+                            writetext.WriteLine("CHUNK EVNT {");
+
                             while (!InStream.IsEOF())
                             {
+                                int padding = InStream.ReadByte();
+                                if (padding == 0)
+                                    break;
+                                InStream.Seek(-1, SeekOrigin.Current);
+
                                 string name = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
-                                byte[] data = InStream.ReadBytes(2);
-                                Array.Reverse(data);
-                                Array.Resize(ref data, 4);
-                                int num = BitConverter.ToInt32(data, 0);
+                                //Why? Wolf is little endian
+                                //byte[] data = InStream.ReadBytes(2);
+                                //Array.Reverse(data);
+                                //Array.Resize(ref data, 4);
+                                //int num = BitConverter.ToInt32(data, 0);
+                                //Console.WriteLine($"'{name}' - '{num}'");
+                                short num = InStream.ReadShort();
+                                //TODO: allow for verbose
                                 Console.WriteLine($"'{name}' - '{num}'");
+
+                                //probably auto incremented from 2000 with some sort of tag like RefFlag
+                                //writetext.WriteLine($"char[33]    \"{name}\"");
+                                //writetext.WriteLine($"int         {num}");
+                                if (num < 2000)
+                                    writetext.WriteLine($"RefINV    \"{name}\"");
+                                else
+                                    writetext.WriteLine($"RefFlag    \"{name}\"");
                             }
+
+                            writetext.WriteLine("}\n");
+
                             break;
 
                         case "SCEN":
@@ -195,7 +219,7 @@ namespace HIFFDecompile
             }
             else
             {
-                writetext.WriteLine($"CHUNK TSUM {{");
+                writetext.WriteLine("CHUNK TSUM {");
                 writetext.WriteLine($"CHAR[50]  \"{SceneDesc}\"");
                 writetext.WriteLine($"RevAVF    \"{RefAVF}\"");
                 writetext.WriteLine($"RefSound  \"{RefSound}\"");
@@ -203,7 +227,7 @@ namespace HIFFDecompile
                 writetext.WriteLine($"long    \"{Enums.loop[loop]}\"");
                 writetext.WriteLine($"int     \"{chan1}\"");
                 writetext.WriteLine($"int     \"{chan2}\"");
-                writetext.WriteLine($"}}\n");
+                writetext.WriteLine("}\n");
             }
 
             if (InStream.debugprint) { Console.WriteLine("---END Scentsum---\n"); }
@@ -304,24 +328,24 @@ namespace HIFFDecompile
             //can shorten to use
             if (!Utils.preferLong)
             {
-                writetext.Write($"use");
+                writetext.Write("use");
                 for (int i = 0; i < NumRefs; i++)
                 {
                     writetext.Write($" {refs[i]}");
                 }
-                writetext.Write($"\n");
+                writetext.Write("\n");
             }
             else
             {
-                writetext.WriteLine($"CHUNK USE {{");
-                writetext.WriteLine($"  BeginCount RefHif");
+                writetext.WriteLine("CHUNK USE {");
+                writetext.WriteLine("  BeginCount RefHif");
                 for (int i = 0; i < NumRefs; i++)
                 {
                     writetext.WriteLine($"    RefHif    \"{refs[i]}\"     // Hif file to include (without the \".hif\")");
                 }
 
-                writetext.WriteLine($"  EndCount RefHif");
-                writetext.WriteLine($"}}\n");
+                writetext.WriteLine("  EndCount RefHif");
+                writetext.WriteLine("}\n");
             }
 
             if (InStream.debugprint) { Console.WriteLine("---END USE---\n"); }

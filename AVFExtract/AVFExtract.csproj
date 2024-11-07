@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="fforjan.staticffmpeg.windows" Version="4.3.1" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.5" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.0-rc.2.24474.1" />
   </ItemGroup>
 
   <ItemGroup>

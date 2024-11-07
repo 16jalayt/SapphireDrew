@@ -85,7 +85,7 @@ namespace Sapphire_Extract_Helpers
             byte[] data = ReadBytes(4);
             Array.Reverse(data);
             int dataout = BitConverter.ToInt32(data, 0);
-            print(msg, Encoding.Default.GetString(data));
+            print(msg, dataout.ToString());
             return dataout;
         }
 
@@ -94,7 +94,7 @@ namespace Sapphire_Extract_Helpers
             byte[] data = ReadBytes(2);
             Array.Reverse(data);
             short dataout = BitConverter.ToInt16(data, 0);
-            print(msg, Encoding.Default.GetString(data));
+            print(msg, dataout.ToString());
             return dataout;
         }
 

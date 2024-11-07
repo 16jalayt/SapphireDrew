@@ -1,9 +1,7 @@
 ﻿using Sapphire_Extract_Helpers;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
@@ -76,19 +74,19 @@ namespace AVFExtract
                 for (int j = 0; j < CompressedLength; j++)
                     compressed[j] = (byte)(compressed[j] - j);
 
-                byte[] outData = Compression.decompressLZSS(compressed);
+                byte[]? outData = Compression.decompressLZSS(compressed);
+                if (outData == null)
+                {
+                    Console.WriteLine($"The file: '{FileName}' has invalid data.\n");
+                    return;
+                }
 
                 //File.WriteAllBytes("test.dat", outData);
                 //System.Environment.Exit(1);
 
                 //possibly wrong colorspace but simple and same final as old extractor?
                 //Thought was rgb565 works as bgra5551
-                var image = Image.LoadPixelData<SixLabors.ImageSharp.PixelFormats.Bgra5551>(outData, width, height);
-                var encd = new PngEncoder
-                {
-                    ColorType = PngColorType.Rgb
-                    //TransparentColorMode = PngTransparentColorMode.Clear
-                };
+                var image = SixLabors.ImageSharp.Image.LoadPixelData<Bgra5551>(outData, width, height);
 
                 /*float threshold = 0.1F;
                 Color sourceColor = Color.White;

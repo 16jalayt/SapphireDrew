@@ -5,7 +5,7 @@ namespace HIFFDecompile
 {
     internal static class Utils
     {
-        public static bool preferLong = true;
+        public static bool preferLong = false;
 
         public static void FatalError()
         {

@@ -34,6 +34,12 @@
             }
         }
 
+        public string RawPrint()
+        {
+            //Convention seems to be space or no space, but no space prefered.
+            return $"{p1x},{p1y},{p2x},{p2y}";
+        }
+
         public override string ToString()
         {
             return $"NancyRect: {p1x}, {p1y}, {p2x}, {p2y}";

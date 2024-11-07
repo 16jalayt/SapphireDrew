@@ -23,7 +23,8 @@ namespace Sapphire_Extract_Helpers
         public static string[] cursor = { "Null", "MANIPULATE_EXAM_CURSOR" };
 
         public static string[] depType = { "Null", "DT_INVENTORY", "DT_EVENT", "DT_LOGIC",
-            "DT_ELAPSED_GAME_TIME", "DT_ELAPSED_SCENE_TIME", "DT_ELAPSED_PLAYER_TIME" };
+            "DT_ELAPSED_GAME_TIME", "DT_ELAPSED_SCENE_TIME", "DT_ELAPSED_PLAYER_TIME", "UNKNOWN", "UNKNOWN", "UNKNOWN",
+            "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "DT_SOUND" };
 
         public static Dictionary<int, string> ACT_Type =
               new Dictionary<int, string>(){

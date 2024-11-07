@@ -1,6 +1,13 @@
 ﻿using Sapphire_Extract_Helpers;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Net;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Versioning;
+using System.Xml.Linq;
+using static HIFFDecompile.Utils;
 
 namespace HIFFDecompile.Chunks
 {
@@ -101,32 +108,45 @@ namespace HIFFDecompile.Chunks
 
             //Not entirely sure what the bit widths are supposed to be
 
-            Utils.ParseDeps(InStream);
+            Dependency[] Deps = Utils.ParseDeps(InStream);
 
             //Typeof: RefOvlStat
             string name = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
             if (InStream.debugprint) { Console.WriteLine("Name: " + name); }
-
+            //TODO: PRINT OUT TO OUTPUT------
             //Z order
-            short ZOrder = InStream.ReadByte("ZOrder: ");
+            short ZOrder = InStream.ReadShort("ZOrder: ");
 
             //TODO: have to loop here
-            short numOVLs = InStream.ReadByte("numOVLs: ");
+            short numOVLs = InStream.ReadShort("numOVLs: ");
+            if (numOVLs <= 0)
+            {
+                Console.WriteLine("ERROR: Invalid number of OVLs. Somthing is off. Aborting...");
+                System.Environment.Exit(1);
+            }
 
-            //Scene frame to draw in
-            short frame = InStream.ReadByte("frame: ");
+            var OVLs = new List<Tuple<short, NancyRect, NancyRect>>();
 
-            //graphic on img
-            NancyRect src = new NancyRect(InStream, true);
-            if (InStream.debugprint) { Console.WriteLine("src: " + src); }
-            //graphic on screen
-            NancyRect dest = new NancyRect(InStream, true);
-            if (InStream.debugprint) { Console.WriteLine("dest: " + dest); }
+            //TODO: better logging for loop
+            for (int i = 0; i < numOVLs; i++)
+            {
+                //Scene frame to draw in
+                short frame = InStream.ReadShort("frame: ");
+
+                //graphic on img
+                NancyRect src = new NancyRect(InStream, false);
+                if (InStream.debugprint) { Console.WriteLine("src: " + src); }
+                //graphic on screen
+                NancyRect dest = new NancyRect(InStream, false);
+                if (InStream.debugprint) { Console.WriteLine("dest: " + dest); }
+                //TODO: find one with multiple OVLs. Not sure if this is where ends
+                OVLs.Add(Tuple.Create(frame, src, dest));
+            }
 
             //Does this do anything?
             //Helpers.AssertIntBE(InStream, 0);
             //?padding to even chunk length?
-            int padding = InStream.ReadByte("padding check");
+            int padding = InStream.ReadByte();
             if (padding != 0)
                 InStream.Seek(-1);
 
@@ -134,6 +154,66 @@ namespace HIFFDecompile.Chunks
             //int frame = InStream.ReadInt();
             //Is 0 in all leakded sources
             if (InStream.debugprint) { Console.WriteLine("   ---END SOVL---"); }
+
+            //Short ver
+            //long      1,1,142,102
+            //long      248,108,390,210
+            //short ver 248 108 144 104
+
+            //Check 1 OVL, and trigger frame is 0
+            if (!Utils.preferLong && OVLs.Count == 1 && OVLs[0].Item1 == 0 &&
+                //ZOrder = VIEWPORT_OVERLAY1_Z and trigger = AE_SINGLE_EXEC
+                ZOrder == 10 && trigger == 1 &&
+                //Check src rect starts with 1,1
+                OVLs[0].Item2.p1x == 1 && OVLs[0].Item2.p1y == 1
+                )
+            //TODO: check deps too
+            {
+                writetext.Write($"ovl {name} {OVLs[0].Item3.p1x} {OVLs[0].Item3.p1y} {OVLs[0].Item2.p2x + 2} {OVLs[0].Item2.p2y + 2}");
+                foreach (Dependency dep in Deps)
+                {
+                    //TODO: lookup refFlag in name table
+                    writetext.Write($" if {dep.depRefFlag} {Enums.tf[dep.depState]}");
+                }
+                writetext.Write("\n");
+            }
+
+            //If did not match template or prefer long
+            else
+            {
+                //TODO: move to act section to make common
+                writetext.WriteLine("CHUNK ACT {");
+                writetext.WriteLine($"char[48]    \"{ActDesc}\"");
+                writetext.WriteLine($"byte      {Enums.ACT_Type[type]}");
+                writetext.WriteLine($"byte      {Enums.execType[trigger]}");
+
+                writetext.WriteLine($"RefOvlStat    \"{name}\"          // Name of ovl file");
+                writetext.WriteLine($"int      {ZOrder}");
+                writetext.WriteLine("BeginCount    int");
+
+                foreach (var ovl in OVLs)
+                {
+                    writetext.WriteLine($"int      {ovl.Item1}           // Scene frame to show this ovl in");
+                    writetext.WriteLine($"long      {ovl.Item2.RawPrint()}");
+                    //Maybe put this, but lots of bad copy pasting in source
+                    //      // 33 x 31
+                    writetext.WriteLine($"long      {ovl.Item3.RawPrint()}");
+                }
+
+                writetext.WriteLine("EndCount int");
+
+                foreach (var dep in Deps)
+                {
+                    writetext.WriteLine("// ------------ Dependency -------------");
+                    writetext.WriteLine($"RefDep      {Enums.depType[dep.depType]}");
+                    writetext.WriteLine($"RefFlag   {dep.depRefFlag}");
+                    writetext.WriteLine($"int     {Enums.tf[dep.depState]}");
+                    writetext.WriteLine($"int     {Enums.depFlag[dep.depFlag]}");
+                    writetext.WriteLine($"int     {dep.rect.RawPrint()}");
+                }
+
+                writetext.WriteLine("}\n");
+            }
         }
 
         private static void HS(BetterBinaryReader InStream, StreamWriter writetext)
@@ -159,33 +239,122 @@ namespace HIFFDecompile.Chunks
 
             //Not entirely sure what the bit widths are supposed to be
 
-            Utils.ParseDeps(InStream);
+            Dependency[] Deps = Utils.ParseDeps(InStream);
 
             //Number of variables to set by Hotzone
             short numVars = InStream.ReadShort("Num vars: ");
 
+            var RefSetFlags = new List<Tuple<short, short>>();
+
+            //TODO: better logging for loop
             for (int i = 0; i < numVars; i++)
             {
                 short varid = InStream.ReadShort("Var ID: ");
                 short state = InStream.ReadShort("State: ");
+                //TODO: find one with multiple OVLs. Not sure if this is where ends
+                RefSetFlags.Add(Tuple.Create(varid, state));
             }
+
+            var HSs = new List<Tuple<short, NancyRect>>();
+            int cursor = -1;
 
             //AT_FLAGS_HS
             if (type == 91)
             {
-                //Might be enum for whatever field scale is.
-                int unk = InStream.ReadInt("Unknown field: ");
+                cursor = InStream.ReadInt("Cursor: ");
 
-                //Action?
-                int action = InStream.ReadInt("Action: ");
+                //Number of variables to set by Hotzone
+                short numHS = InStream.ReadShort("Num vars: ");
 
-                //LITTLE ENDIAN
-                //y has 65 added?
-                NancyRect pos = new NancyRect(InStream);
-                if (InStream.debugprint) { Console.WriteLine("pos: " + pos); }
+                for (int i = 0; i < numHS; i++)
+                {
+                    short frame = InStream.ReadShort("frame: ");
+
+                    //y has 65 added?
+                    NancyRect zone = new NancyRect(InStream, false);
+                    if (InStream.debugprint) { Console.WriteLine("zone: " + zone); }
+
+                    HSs.Add(Tuple.Create(frame, zone));
+                }
             }
 
             if (InStream.debugprint) { Console.WriteLine("   ---END HS---"); }
+
+            //AT_FLAGS_HS
+            if (!Utils.preferLong && type == 91
+                //Check 1 HS and frame = 0
+                && HSs.Count == 1 && HSs[0].Item1 == 0
+                )
+            {
+                writetext.Write($"hsflags scale {cursor} {HSs[0].Item2.p1x} {HSs[0].Item2.p1y} {HSs[0].Item2.p2x} {HSs[0].Item2.p2y - 65}");
+                foreach (var RefSetFlag in RefSetFlags)
+                {
+                    //TODO: lookup refFlag in name table
+                    writetext.Write($" {RefSetFlag.Item1} {Enums.tf[RefSetFlag.Item2]}");
+                }
+                writetext.Write("\n");
+            }
+
+            //AT_FLAGS
+            else if (!Utils.preferLong && type == 90)
+            {
+                writetext.Write($"hsflags scale");
+                foreach (var RefSetFlag in RefSetFlags)
+                {
+                    //TODO: lookup refFlag in name table
+                    writetext.Write($" {RefSetFlag.Item1} {Enums.tf[RefSetFlag.Item2]}");
+                }
+                writetext.Write("\n");
+            }
+
+            //If did not match template or prefer long
+            else
+            {
+                //TODO: move to act section to make common
+                writetext.WriteLine("CHUNK ACT {");
+                writetext.WriteLine($"char[48]    \"{ActDesc}\"");
+                writetext.WriteLine($"byte      {Enums.ACT_Type[type]}");
+                writetext.WriteLine($"byte      {Enums.execType[trigger]}");
+
+                writetext.WriteLine("BeginCount RefSetFlag");
+
+                foreach (var RefSetFlag in RefSetFlags)
+                {
+                    writetext.WriteLine($"RefSetFlag    {RefSetFlag.Item1}           // Flag to set");
+                    writetext.WriteLine($"int       {Enums.tf[RefSetFlag.Item2]}");
+                }
+
+                writetext.WriteLine("EndCount RefSetFlag");
+
+                //AT_FLAGS_HS
+                if (type == 91)
+                {
+                    //TODO: add to enums
+                    writetext.WriteLine($"long      {cursor}        // Cursor to show when in hotspot");
+
+                    writetext.WriteLine("BeginCount long");
+
+                    foreach (var HS in HSs)
+                    {
+                        writetext.WriteLine($"int       {HS.Item1}           // Frame hotspot is active in");
+                        writetext.WriteLine($"long      {HS.Item2.RawPrint()}   // {HS.Item2.p2x - HS.Item2.p1x} x {HS.Item2.p2y - HS.Item2.p1y}");
+                    }
+
+                    writetext.WriteLine("EndCount long");
+                }
+
+                foreach (var dep in Deps)
+                {
+                    writetext.WriteLine("// ------------ Dependency -------------");
+                    writetext.WriteLine($"RefDep      {Enums.depType[dep.depType]}");
+                    writetext.WriteLine($"RefFlag   {dep.depRefFlag}");
+                    writetext.WriteLine($"int     {Enums.tf[dep.depState]}");
+                    writetext.WriteLine($"int     {Enums.depFlag[dep.depFlag]}");
+                    writetext.WriteLine($"int     {dep.rect.RawPrint()}");
+                }
+
+                writetext.WriteLine("}\n");
+            }
         }
 
         //Conditionally change scene.
