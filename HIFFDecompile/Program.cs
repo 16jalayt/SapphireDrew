@@ -1,4 +1,5 @@
 ﻿using HIFFDecompile.Chunks;
+using ManyConsole;
 using Sapphire_Extract_Helpers;
 using System;
 using System.IO;
@@ -27,21 +28,58 @@ namespace HIFFDecompile
 
     internal static class Program
     {
+        public class Parameters : ConsoleCommand
+        {
+            public Parameters()
+            {
+                IsCommand("Decompile", "Decompiles Nancy Drew HIFF files");
+
+                //HasLongDescription("This can be used to quickly read a file's contents " +
+                //"while optionally stripping out the ',' character.");
+
+                //HasRequiredOption("f|file=", "The full path of the file.", p => FileName = p);
+
+                HasOption("v|verbose:", "Prints debug information to console",
+            t => Verbose = t == null ? true : Convert.ToBoolean(t));
+
+                HasOption("l|preferLong:", "Prevents shortening most chunks",
+            t => Utils.preferLong = t == null ? true : Convert.ToBoolean(t));
+
+                AllowsAnyAdditionalArguments("File to extract");
+                SkipsCommandSummaryBeforeRunning();
+            }
+
+            public override int Run(string[] remainingArguments)
+            {
+                if (remainingArguments.Length != 1)
+                {
+                    throw new ConsoleHelpAsException("Invalid syntax.");
+                }
+                if (!new FileInfo(remainingArguments[0]).Exists)
+                {
+                    throw new ConsoleHelpAsException("Unable to find file: " + remainingArguments[0]);
+                }
+                FileName = remainingArguments[0];
+                return 0;
+            }
+        }
+
+        private static bool Verbose = false;
+        private static string FileName = "Invalid File";
+
         private static void Main(string[] args)
         {
-            //TODO: command line prefer short or long
-            if (args.Length < 1)
-            {
-                Console.WriteLine("Usage is HIFFDecompile.exe filename");
+            var commands = ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(Program));
+
+            int returncode = ConsoleCommandDispatcher.DispatchCommand(commands, args, Console.Out);
+            //Exit if invalid parameters
+            if (returncode == -1)
                 return;
-            }
 
             //Tool status
             Console.WriteLine("CURRENTLY BROKEN\n");
             //Console.WriteLine("EXPEREMENTAL\n");
             //Console.WriteLine("UNVALIDATED\n");
-
-            string FileName = args[0];
 
             if (!File.Exists(FileName))
             {
@@ -50,11 +88,8 @@ namespace HIFFDecompile
             }
             BetterBinaryReader InStream = new BetterBinaryReader(FileName);
 
-            //TODO: somehow allow specify flags file to print names
-            if (args.Length > 1 && args[1] == "-v" || args.Length > 2 && args[2] == "-v")
+            if (Verbose)
                 InStream.debugprint = true;
-            if (args.Length > 1 && args[1] == "-l" || args.Length > 2 && args[2] == "-l")
-                Utils.preferLong = true;
 
             Console.WriteLine($"Printout of: '{InStream.FilePath}'\n");
 
