@@ -1,5 +1,7 @@
 ﻿using Sapphire_Extract_Helpers;
 using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace HIFFDecompile
 {
@@ -58,6 +60,52 @@ namespace HIFFDecompile
             InStream.Skip(23);
 
             return deps;
+        }
+
+        private static Dictionary<int, string> Flags = new Dictionary<int, string>();
+
+        public static void PopulateFlags(string? flagsFileName, bool verbose = false)
+        {
+            if (flagsFileName != null)
+            {
+                if (!File.Exists(flagsFileName))
+                {
+                    Console.WriteLine("The flags file '{}' does not exist");
+                    System.Environment.Exit(1);
+                }
+
+                Console.WriteLine("Parsing Flags.hif");
+                BetterBinaryReader InStream = new BetterBinaryReader(flagsFileName);
+
+                //TODO: better parsing or common
+                InStream.Seek(20);
+                while (!InStream.IsEOF())
+                {
+                    //Appears at end of file
+                    int padding = InStream.ReadByte();
+                    if (padding == 0)
+                        break;
+                    InStream.Seek(-1, SeekOrigin.Current);
+
+                    string flagName = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
+                    short num = InStream.ReadShort();
+                    if (verbose)
+                        Console.WriteLine($"'{flagName}' - '{num}'");
+
+                    //At least in WOLF, dupes seem common
+                    if (!Flags.TryAdd(num, flagName))
+                        Console.WriteLine($"Duplicate flag for '{flagName}' - '{num}'");
+                }
+            }
+        }
+
+        public static string GetFlagName(int num)
+        {
+            string? properName;
+            if (Flags.Count != 0 && Flags.TryGetValue(num, out properName))
+                return properName;
+            else
+                return num.ToString();
         }
     }
 }

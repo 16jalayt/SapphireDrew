@@ -19,6 +19,8 @@ namespace HIFFDecompile
 
 	 * Either ssum or tsum required and handled outside selection tree
 	 * ssum and tsum checked against string
+	 *
+	 * TODO:look into: int long byte can be either quoted or not
      * */
 
     //QUOT chunk in boot is for easter egg
@@ -37,7 +39,8 @@ namespace HIFFDecompile
                 //HasLongDescription("This can be used to quickly read a file's contents " +
                 //"while optionally stripping out the ',' character.");
 
-                //HasRequiredOption("f|file=", "The full path of the file.", p => FileName = p);
+                //HasOption("f|flags=", "A file containing the flags for this game. Can be Flags.hiff or Flags.htxt", p => FileName = p);
+                HasOption("f|flags=", "A file containing the flags for this game. Must be Flags.hiff", p => FlagsFileName = p);
 
                 HasOption("v|verbose:", "Prints debug information to console",
             t => Verbose = t == null ? true : Convert.ToBoolean(t));
@@ -65,7 +68,8 @@ namespace HIFFDecompile
         }
 
         private static bool Verbose = false;
-        private static string FileName = "Invalid File";
+        private static string? FileName;
+        private static string? FlagsFileName;
 
         private static void Main(string[] args)
         {
@@ -81,7 +85,7 @@ namespace HIFFDecompile
             //Console.WriteLine("EXPEREMENTAL\n");
             //Console.WriteLine("UNVALIDATED\n");
 
-            if (!File.Exists(FileName))
+            if (FileName == "Invalid File" || !File.Exists(FileName))
             {
                 Console.WriteLine($"The file: '{FileName}' does not exist.");
                 return;
@@ -90,6 +94,9 @@ namespace HIFFDecompile
 
             if (Verbose)
                 InStream.debugprint = true;
+
+            if (FlagsFileName != null)
+                Utils.PopulateFlags(FlagsFileName, Verbose);
 
             Console.WriteLine($"Printout of: '{InStream.FilePath}'\n");
 
@@ -141,6 +148,7 @@ namespace HIFFDecompile
                                 //int num = BitConverter.ToInt32(data, 0);
                                 //Console.WriteLine($"'{name}' - '{num}'");
                                 short num = InStream.ReadShort();
+
                                 //TODO: allow for verbose
                                 Console.WriteLine($"'{name}' - '{num}'");
 
@@ -258,10 +266,10 @@ namespace HIFFDecompile
                 writetext.WriteLine($"CHAR[50]  \"{SceneDesc}\"");
                 writetext.WriteLine($"RevAVF    \"{RefAVF}\"");
                 writetext.WriteLine($"RefSound  \"{RefSound}\"");
-                writetext.WriteLine($"int     \"{Enums.soundChannel[sceneChan]}\"");
-                writetext.WriteLine($"long    \"{Enums.loop[loop]}\"");
-                writetext.WriteLine($"int     \"{chan1}\"");
-                writetext.WriteLine($"int     \"{chan2}\"");
+                writetext.WriteLine($"int     {Enums.soundChannel[sceneChan]}");
+                writetext.WriteLine($"long    {Enums.loop[loop]}");
+                writetext.WriteLine($"int     {chan1}");
+                writetext.WriteLine($"int      {chan2}");
                 writetext.WriteLine("}\n");
             }
 

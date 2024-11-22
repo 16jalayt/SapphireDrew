@@ -2,11 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
-using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Arm;
-using System.Runtime.Versioning;
-using System.Xml.Linq;
 using static HIFFDecompile.Utils;
 
 namespace HIFFDecompile.Chunks
@@ -173,7 +168,7 @@ namespace HIFFDecompile.Chunks
                 foreach (Dependency dep in Deps)
                 {
                     //TODO: lookup refFlag in name table
-                    writetext.Write($" if {dep.depRefFlag} {Enums.tf[dep.depState]}");
+                    writetext.Write($" if {Utils.GetFlagName(dep.depRefFlag)} {Enums.tf[dep.depState]}");
                 }
                 writetext.Write("\n");
             }
@@ -206,7 +201,7 @@ namespace HIFFDecompile.Chunks
                 {
                     writetext.WriteLine("// ------------ Dependency -------------");
                     writetext.WriteLine($"RefDep      {Enums.depType[dep.depType]}");
-                    writetext.WriteLine($"RefFlag   {dep.depRefFlag}");
+                    writetext.WriteLine($"RefFlag   {Utils.GetFlagName(dep.depRefFlag)}");
                     writetext.WriteLine($"int     {Enums.tf[dep.depState]}");
                     writetext.WriteLine($"int     {Enums.depFlag[dep.depFlag]}");
                     writetext.WriteLine($"int     {dep.rect.RawPrint()}");
@@ -249,7 +244,9 @@ namespace HIFFDecompile.Chunks
             //TODO: better logging for loop
             for (int i = 0; i < numVars; i++)
             {
-                short varid = InStream.ReadShort("Var ID: ");
+                short varid = InStream.ReadShort("");
+                if (InStream.debugprint)
+                    Console.WriteLine("Var ID: " + Utils.GetFlagName(varid));
                 short state = InStream.ReadShort("State: ");
                 //TODO: find one with multiple OVLs. Not sure if this is where ends
                 RefSetFlags.Add(Tuple.Create(varid, state));
@@ -347,7 +344,7 @@ namespace HIFFDecompile.Chunks
                 {
                     writetext.WriteLine("// ------------ Dependency -------------");
                     writetext.WriteLine($"RefDep      {Enums.depType[dep.depType]}");
-                    writetext.WriteLine($"RefFlag   {dep.depRefFlag}");
+                    writetext.WriteLine($"RefFlag   {Utils.GetFlagName(dep.depRefFlag)}");
                     writetext.WriteLine($"int     {Enums.tf[dep.depState]}");
                     writetext.WriteLine($"int     {Enums.depFlag[dep.depFlag]}");
                     writetext.WriteLine($"int     {dep.rect.RawPrint()}");
@@ -460,8 +457,8 @@ namespace HIFFDecompile.Chunks
             //LOOP_ONCE = 1
             int loop = InStream.ReadInt("Loop: ");
 
-            //Unknown. volume?
-            short unknown = InStream.ReadShort("Unknown: ");
+            //Volume
+            short volume = InStream.ReadShort("Volume: ");
 
             //"next scene before sound ends?"
             byte nextScene = InStream.ReadByte("Next Scene: ");
@@ -511,12 +508,12 @@ namespace HIFFDecompile.Chunks
             writetext.WriteLine($"EndCount  RefSound");
             writetext.WriteLine($"int     {Enums.soundChannel[chan]}");
             writetext.WriteLine($"long    {Enums.loop[loop]}");
-            writetext.WriteLine($"int     {unknown}");
+            writetext.WriteLine($"int     {volume}");
             writetext.WriteLine($"byte    {Enums.tfCamel[nextScene]}         // next scene before sound ends?");
             if (refScene == 9999)
                 writetext.WriteLine($"RefScene  NO_SCENE");
             else
-                writetext.WriteLine($"RefScene  {refScene}");
+                writetext.WriteLine($"RefScene  {Utils.GetFlagName(refScene)}");
             writetext.WriteLine($"// the name of the text key must match the name of the sound file");
             writetext.WriteLine($"byte    {Enums.CCTEXT_TYPE[textType]}    // _SCROLL, _SHORT, _NONE");
             writetext.WriteLine($"BeginCount  RefSetFlag");
@@ -536,7 +533,7 @@ namespace HIFFDecompile.Chunks
                 for (int i = 0; i < deps.Length; i++)
                 {
                     writetext.WriteLine($"RefDep      {deps[i].depType}");
-                    writetext.WriteLine($"RefFlag   {deps[i].depRefFlag}");
+                    writetext.WriteLine($"RefFlag   {Utils.GetFlagName(deps[i].depRefFlag)}");
                     writetext.WriteLine($"int     {Enums.tfCamel[deps[i].depState]}");
                     writetext.WriteLine($"int     {Enums.depFlag[deps[i].depFlag]}");
                     writetext.WriteLine($"int     {deps[i].rect.p1x},{deps[i].rect.p1y},{deps[i].rect.p2x},{deps[i].rect.p2y}");

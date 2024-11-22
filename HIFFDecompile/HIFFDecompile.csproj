@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="ManyConsole" Version="2.0.1" />
+    <PackageReference Include="System.Collections" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>
