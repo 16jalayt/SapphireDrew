@@ -19,6 +19,7 @@ namespace HIFFDecompile
 
 	 * Either ssum or tsum required and handled outside selection tree
 	 * ssum and tsum checked against string
+	 * RefFlag can be substituted for int and compile. Adendum: is int in dt_sound. Might be type dependent
 	 *
 	 * TODO:look into: int long byte can be either quoted or not
      * */
@@ -149,13 +150,13 @@ namespace HIFFDecompile
                                 //Console.WriteLine($"'{name}' - '{num}'");
                                 short num = InStream.ReadShort();
 
-                                //TODO: allow for verbose
-                                Console.WriteLine($"'{name}' - '{num}'");
+                                if (InStream.debugprint)
+                                    Console.WriteLine($"'{name}' - '{num}'");
 
                                 //probably auto incremented from 2000 with some sort of tag like RefFlag
                                 //writetext.WriteLine($"char[33]    \"{name}\"");
                                 //writetext.WriteLine($"int         {num}");
-                                if (num < 2000)
+                                if (num < 100)
                                     writetext.WriteLine($"RefINV    \"{name}\"");
                                 else
                                     writetext.WriteLine($"RefFlag    \"{name}\"");
@@ -263,8 +264,8 @@ namespace HIFFDecompile
             else
             {
                 writetext.WriteLine("CHUNK TSUM {");
-                writetext.WriteLine($"CHAR[50]  \"{SceneDesc}\"");
-                writetext.WriteLine($"RevAVF    \"{RefAVF}\"");
+                writetext.WriteLine($"char[50]  \"{SceneDesc}\"");
+                writetext.WriteLine($"RefAVF    \"{RefAVF}\"");
                 writetext.WriteLine($"RefSound  \"{RefSound}\"");
                 writetext.WriteLine($"int     {Enums.soundChannel[sceneChan]}");
                 writetext.WriteLine($"long    {Enums.loop[loop]}");
@@ -347,6 +348,7 @@ namespace HIFFDecompile
         }
 
         //Use seems to be an import/func call
+        //Note: Compiler removes unused uses
         private static void Use(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine($"--USE {InStream.Position()}---"); }

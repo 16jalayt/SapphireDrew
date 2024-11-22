@@ -45,9 +45,6 @@ namespace HIFFDecompile
                 //type of RefFlag
                 deps[i].depRefFlag = InStream.ReadShort("Dep ref: ");
 
-                //TODO: more here, need different dependency to test
-                //All Shorts?
-                //InStream.Skip(12);
                 deps[i].depState = InStream.ReadShort("Dep state: ");
                 deps[i].depFlag = InStream.ReadShort("Dep flag: ");
                 deps[i].rect = new NancyRect(InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort());
@@ -62,10 +59,26 @@ namespace HIFFDecompile
             return deps;
         }
 
+        public static void PrintDeps(Dependency[] deps, StreamWriter writetext)
+        {
+            foreach (var dep in deps)
+            {
+                writetext.WriteLine("// ------------ Dependency -------------");
+                writetext.WriteLine($"RefDep      {Enums.depType[dep.depType]}");
+                //TODO: need to branch on type to get right object
+                writetext.WriteLine($"RefFlag   {Utils.GetFlagName(dep.depRefFlag)}");
+                writetext.WriteLine($"int     {Enums.tf[dep.depState]}");
+                writetext.WriteLine($"int     {Enums.depFlag[dep.depFlag]}");
+                writetext.WriteLine($"int     {dep.rect.RawPrint()}");
+            }
+        }
+
         private static Dictionary<int, string> Flags = new Dictionary<int, string>();
+        private static Dictionary<int, string> INV = new Dictionary<int, string>();
 
         public static void PopulateFlags(string? flagsFileName, bool verbose = false)
         {
+            //TODO: add .txt
             if (flagsFileName != null)
             {
                 if (!File.Exists(flagsFileName))
@@ -92,9 +105,29 @@ namespace HIFFDecompile
                     if (verbose)
                         Console.WriteLine($"'{flagName}' - '{num}'");
 
-                    //At least in WOLF, dupes seem common
-                    if (!Flags.TryAdd(num, flagName))
-                        Console.WriteLine($"Duplicate flag for '{flagName}' - '{num}'");
+                    if (num < 100)
+                    {
+                        if (!INV.TryAdd(num, flagName))
+                            Console.WriteLine($"Duplicate flag for '{flagName}' - '{num}'");
+                    }
+                    else
+                    {
+                        //At least in WOLF, dupes seem common
+                        if (!Flags.TryAdd(num, flagName))
+                            Console.WriteLine($"Duplicate flag for '{flagName}' - '{num}'");
+                    }
+                }
+
+                int flagNum = 1010;
+                for (int i = 0; i < 51; i++)
+                {
+                    if (verbose)
+                        Console.WriteLine($"'{"EV_Generic" + i}' - '{flagNum}'");
+
+                    if (!Flags.TryAdd(flagNum, "EV_Generic" + i))
+                        Console.WriteLine($"Duplicate flag for '{"EV_Generic" + i}' - '{flagNum}'");
+
+                    flagNum++;
                 }
             }
         }

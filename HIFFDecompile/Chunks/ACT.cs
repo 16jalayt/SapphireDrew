@@ -183,7 +183,7 @@ namespace HIFFDecompile.Chunks
                 writetext.WriteLine($"byte      {Enums.execType[trigger]}");
 
                 writetext.WriteLine($"RefOvlStat    \"{name}\"          // Name of ovl file");
-                writetext.WriteLine($"int      {ZOrder}");
+                writetext.WriteLine($"int      {Enums.z[ZOrder]}     // Z-Order, 1-4");
                 writetext.WriteLine("BeginCount    int");
 
                 foreach (var ovl in OVLs)
@@ -197,15 +197,7 @@ namespace HIFFDecompile.Chunks
 
                 writetext.WriteLine("EndCount int");
 
-                foreach (var dep in Deps)
-                {
-                    writetext.WriteLine("// ------------ Dependency -------------");
-                    writetext.WriteLine($"RefDep      {Enums.depType[dep.depType]}");
-                    writetext.WriteLine($"RefFlag   {Utils.GetFlagName(dep.depRefFlag)}");
-                    writetext.WriteLine($"int     {Enums.tf[dep.depState]}");
-                    writetext.WriteLine($"int     {Enums.depFlag[dep.depFlag]}");
-                    writetext.WriteLine($"int     {dep.rect.RawPrint()}");
-                }
+                Utils.PrintDeps(Deps, writetext);
 
                 writetext.WriteLine("}\n");
             }
@@ -317,8 +309,8 @@ namespace HIFFDecompile.Chunks
 
                 foreach (var RefSetFlag in RefSetFlags)
                 {
-                    writetext.WriteLine($"RefSetFlag    {RefSetFlag.Item1}           // Flag to set");
-                    writetext.WriteLine($"int       {Enums.tf[RefSetFlag.Item2]}");
+                    writetext.WriteLine($"RefSetFlag    {Utils.GetFlagName(RefSetFlag.Item1)}           // Flag to set");
+                    writetext.WriteLine($"int       {Enums.tf[RefSetFlag.Item2]}            // Set flag TRUE or FALSE");
                 }
 
                 writetext.WriteLine("EndCount RefSetFlag");
@@ -326,8 +318,8 @@ namespace HIFFDecompile.Chunks
                 //AT_FLAGS_HS
                 if (type == 91)
                 {
-                    //TODO: add to enums
-                    writetext.WriteLine($"long      {cursor}        // Cursor to show when in hotspot");
+                    //writetext.WriteLine($"long      {Enums.cursor[cursor]}        // Cursor to show when in hotspot");
+                    writetext.WriteLine($"long      {Enums.getCursorTemp(cursor)}        // Cursor to show when in hotspot");
 
                     writetext.WriteLine("BeginCount long");
 
@@ -340,15 +332,7 @@ namespace HIFFDecompile.Chunks
                     writetext.WriteLine("EndCount long");
                 }
 
-                foreach (var dep in Deps)
-                {
-                    writetext.WriteLine("// ------------ Dependency -------------");
-                    writetext.WriteLine($"RefDep      {Enums.depType[dep.depType]}");
-                    writetext.WriteLine($"RefFlag   {Utils.GetFlagName(dep.depRefFlag)}");
-                    writetext.WriteLine($"int     {Enums.tf[dep.depState]}");
-                    writetext.WriteLine($"int     {Enums.depFlag[dep.depFlag]}");
-                    writetext.WriteLine($"int     {dep.rect.RawPrint()}");
-                }
+                Utils.PrintDeps(Deps, writetext);
 
                 writetext.WriteLine("}\n");
             }
@@ -500,44 +484,37 @@ namespace HIFFDecompile.Chunks
             writetext.WriteLine($"char[48]  \"{ActDesc}\"");
             writetext.WriteLine($"byte    {Enums.ACT_Type[type]}");
             writetext.WriteLine($"byte    {Enums.execType[trigger]}");
-            writetext.WriteLine($"BeginCount  RefSound");
+            writetext.WriteLine("BeginCount  RefSound");
             for (int i = 0; i < numRefSound; i++)
             {
                 writetext.WriteLine($"RefSound  \"{refSounds[i]}\"");
             }
-            writetext.WriteLine($"EndCount  RefSound");
+            writetext.WriteLine("EndCount  RefSound");
             writetext.WriteLine($"int     {Enums.soundChannel[chan]}");
             writetext.WriteLine($"long    {Enums.loop[loop]}");
             writetext.WriteLine($"int     {volume}");
-            writetext.WriteLine($"byte    {Enums.tfCamel[nextScene]}         // next scene before sound ends?");
+            writetext.WriteLine($"byte    {Enums.tf[nextScene]}         // next scene before sound ends?");
             if (refScene == 9999)
-                writetext.WriteLine($"RefScene  NO_SCENE");
+                writetext.WriteLine("RefScene  NO_SCENE");
             else
                 writetext.WriteLine($"RefScene  {Utils.GetFlagName(refScene)}");
-            writetext.WriteLine($"// the name of the text key must match the name of the sound file");
+            writetext.WriteLine("// the name of the text key must match the name of the sound file");
+            //NOTE: For .htxt, CCTEXT_TYPE_AUTO is valid and compiler handled
             writetext.WriteLine($"byte    {Enums.CCTEXT_TYPE[textType]}    // _SCROLL, _SHORT, _NONE");
             writetext.WriteLine($"BeginCount  RefSetFlag");
             for (int i = 0; i < numRefSetFlags; i++)
             {
                 if (refSetFlags[i] == -1)
-                    writetext.WriteLine($"RefSetFlag  EV_NO_EVENT     // when sound begins");
+                    writetext.WriteLine("RefSetFlag  EV_NO_EVENT     // when sound begins");
                 else
-                    writetext.WriteLine($"RefSetFlag  {refSetFlags[i]}     // when sound begins");
+                    writetext.WriteLine($"RefSetFlag  {Utils.GetFlagName(refSetFlags[i])}     // when sound begins");
 
-                writetext.WriteLine($"int     {Enums.tfCamel[RefSetFlagTruths[i]]}");
+                writetext.WriteLine($"int     {Enums.tf[RefSetFlagTruths[i]]}");
             }
-            writetext.WriteLine($"EndCount  RefSetFlag");
+            writetext.WriteLine("EndCount  RefSetFlag");
             if (deps.Length > 0)
             {
-                writetext.WriteLine($"// ------------ Dependency -------------");
-                for (int i = 0; i < deps.Length; i++)
-                {
-                    writetext.WriteLine($"RefDep      {deps[i].depType}");
-                    writetext.WriteLine($"RefFlag   {Utils.GetFlagName(deps[i].depRefFlag)}");
-                    writetext.WriteLine($"int     {Enums.tfCamel[deps[i].depState]}");
-                    writetext.WriteLine($"int     {Enums.depFlag[deps[i].depFlag]}");
-                    writetext.WriteLine($"int     {deps[i].rect.p1x},{deps[i].rect.p1y},{deps[i].rect.p2x},{deps[i].rect.p2y}");
-                }
+                Utils.PrintDeps(deps, writetext);
             }
 
             writetext.WriteLine($"}}\n");
