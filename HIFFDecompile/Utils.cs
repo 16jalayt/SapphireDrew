@@ -31,8 +31,7 @@ namespace HIFFDecompile
             int numDeps = InStream.ReadInt("Num deps: ");
             Dependency[] deps = new Dependency[numDeps];
 
-            //TODO:if numdeps != 0
-            if (numDeps != 0 && InStream.debugprint) { Console.WriteLine("    ---Ref---"); }
+            if (numDeps != 0 && InStream.debugprint) { Console.WriteLine("    ---Dependency---"); }
 
             for (int i = 0; i < numDeps; i++)
             {
@@ -49,7 +48,7 @@ namespace HIFFDecompile
                 deps[i].depFlag = InStream.ReadShort("Dep flag: ");
                 deps[i].rect = new NancyRect(InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort(), InStream.ReadShort());
                 if (InStream.debugprint) { Console.WriteLine(deps[i].rect); }
-                if (InStream.debugprint) { Console.WriteLine("    ---End Ref---"); }
+                if (InStream.debugprint) { Console.WriteLine("    ---End Dep---"); }
             }
 
             Helpers.AssertString(InStream, "EndOfDeps", true);
@@ -64,10 +63,34 @@ namespace HIFFDecompile
             foreach (var dep in deps)
             {
                 writetext.WriteLine("// ------------ Dependency -------------");
-                writetext.WriteLine($"RefDep      {Enums.depType[dep.depType]}");
-                //TODO: need to branch on type to get right object
-                writetext.WriteLine($"RefFlag   {Utils.GetFlagName(dep.depRefFlag)}");
-                writetext.WriteLine($"int     {Enums.tf[dep.depState]}");
+
+                string depType = Enums.depType[dep.depType];
+                writetext.WriteLine($"RefDep      {depType}");
+
+                //depRefFlag
+                if (depType == "DT_EVENT")
+                    writetext.WriteLine($"RefFlag   {GetFlagName(dep.depRefFlag)}");
+                else if (depType == "DT_INVENTORY")
+                    writetext.WriteLine($"RefFlag   {GetInvName(dep.depRefFlag)}");
+                else if (depType == "DT_SOUND")
+                    writetext.WriteLine($"int   {Enums.soundChannel[dep.depRefFlag]}");
+                else if (depType == "DT_PLAYER_TOD")
+                    writetext.WriteLine($"int   {Enums.tod[dep.depRefFlag]}");
+                else if (depType == "DT_CURSOR_TYPE")
+                    writetext.WriteLine($"int   {Enums.getCursorTemp(dep.depRefFlag)}");
+                else if (depType == "DT_TIMER_LESS_THAN_DEPENDENCY_TIME" || depType == "DT_TIMER_GREATER_THAN_DEPENDENCY_TIME")
+                    writetext.WriteLine($"int   {Enums.timers[dep.depRefFlag]}");
+                else
+                    writetext.WriteLine($"int   {dep.depRefFlag}");
+
+                //depState
+                if (depType == "DT_OPEN_PARENTHESIS" || depType == "DT_OPEN_PARENTHESIS" || depType == "DT_PLAYER_TOD")
+                    writetext.WriteLine($"int     {dep.depState}");
+                else if (depType == "DT_DIFFICULTY_LEVEL")
+                    writetext.WriteLine($"int     {Enums.difficulty[dep.depState]}   // _EASY _HARD");
+                else
+                    writetext.WriteLine($"int     {Enums.tf[dep.depState]}");
+
                 writetext.WriteLine($"int     {Enums.depFlag[dep.depFlag]}");
                 writetext.WriteLine($"int     {dep.rect.RawPrint()}");
             }
@@ -136,6 +159,15 @@ namespace HIFFDecompile
         {
             string? properName;
             if (Flags.Count != 0 && Flags.TryGetValue(num, out properName))
+                return properName;
+            else
+                return num.ToString();
+        }
+
+        public static string GetInvName(int num)
+        {
+            string? properName;
+            if (INV.Count != 0 && INV.TryGetValue(num, out properName))
                 return properName;
             else
                 return num.ToString();

@@ -28,13 +28,17 @@ namespace HIFFDecompile.Chunks
                 //AT_FLAGS or AT_FLAGS_HS
                 case 90:
                 case 91:
-                    HS(InStream, writetext);
+                    Flags(InStream, writetext);
                     break;
                 //AT_SCENE_FRAME_HS = 19, AT_SCENE_FRAME = 16, noral change = 15
                 case 19:
                 case 16:
                 case 15:
                     SC(InStream, writetext);
+                    break;
+
+                case 29:
+                    UI_Control(InStream, writetext);
                     break;
 
                 /*case "Fade":
@@ -73,6 +77,7 @@ namespace HIFFDecompile.Chunks
                     break;*/
 
                 default:
+                    //TODO: skip chunk insted of fatal?
                     Console.WriteLine($"Unknown act type: '{type}'");
                     Utils.FatalError();
                     break;
@@ -203,7 +208,7 @@ namespace HIFFDecompile.Chunks
             }
         }
 
-        private static void HS(BetterBinaryReader InStream, StreamWriter writetext)
+        private static void Flags(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---HS---"); }
 
@@ -309,8 +314,8 @@ namespace HIFFDecompile.Chunks
 
                 foreach (var RefSetFlag in RefSetFlags)
                 {
-                    writetext.WriteLine($"RefSetFlag    {Utils.GetFlagName(RefSetFlag.Item1)}           // Flag to set");
-                    writetext.WriteLine($"int       {Enums.tf[RefSetFlag.Item2]}            // Set flag TRUE or FALSE");
+                    writetext.WriteLine($"  RefSetFlag    {Utils.GetFlagName(RefSetFlag.Item1)}           // Flag to set");
+                    writetext.WriteLine($"  int       {Enums.tf[RefSetFlag.Item2]}            // Set flag TRUE or FALSE");
                 }
 
                 writetext.WriteLine("EndCount RefSetFlag");
@@ -325,8 +330,8 @@ namespace HIFFDecompile.Chunks
 
                     foreach (var HS in HSs)
                     {
-                        writetext.WriteLine($"int       {HS.Item1}           // Frame hotspot is active in");
-                        writetext.WriteLine($"long      {HS.Item2.RawPrint()}   // {HS.Item2.p2x - HS.Item2.p1x} x {HS.Item2.p2y - HS.Item2.p1y}");
+                        writetext.WriteLine($"  int       {HS.Item1}           // Frame hotspot is active in");
+                        writetext.WriteLine($"  long      {HS.Item2.RawPrint()}   // {HS.Item2.p2x - HS.Item2.p1x} x {HS.Item2.p2y - HS.Item2.p1y}");
                     }
 
                     writetext.WriteLine("EndCount long");
@@ -346,30 +351,36 @@ namespace HIFFDecompile.Chunks
 
             //Type of HS
             //AT_SCENE_FRAME_HS = 19, AT_SCENE_FRAME = 16, noral change = 15
-            byte HSType = InStream.ReadByte("HSType: ");
+            byte type = InStream.ReadByte("type: ");
 
-            if (HSType == 19)
+            if (type == 19)
             {
                 if (InStream.debugprint) { Console.WriteLine($"---Scene Change with hot {InStream.Position()}---"); }
             }
-            else if (HSType == 15)
+            else if (type == 15)
             {
                 if (InStream.debugprint) { Console.WriteLine($"---Scene Change {InStream.Position()}---"); }
             }
-            else if (HSType == 16)
+            else if (type == 16)
             {
                 if (InStream.debugprint) { Console.WriteLine($"---Scene Change with frame {InStream.Position()}---"); }
             }
 
             //AE_SINGLE_EXEC = 1
             //AE_MULTI_EXEC	= 2
-            byte HSExec = InStream.ReadByte("HSExec: ");
+            byte trigger = InStream.ReadByte("Trigger: ");
 
-            Utils.ParseDeps(InStream);
+            Dependency[] Deps = Utils.ParseDeps(InStream);
+
+            writetext.WriteLine("CHUNK ACT {");
+            writetext.WriteLine($"char[48]    \"{ActDesc}\"");
+            writetext.WriteLine($"byte      {Enums.ACT_Type[type]}");
+            writetext.WriteLine($"byte      {Enums.execType[trigger]}");
 
             short sceneNumber = InStream.ReadShort("Switch to: ");
+            writetext.WriteLine($"RefScene      {sceneNumber}");
 
-            if (HSType == 19)
+            if (type == 19)
             {
                 int frame = InStream.ReadInt("Frame: ");
                 //FORWARD_CURSOR = 12
@@ -379,11 +390,20 @@ namespace HIFFDecompile.Chunks
                 //Hotzone position
                 NancyRect pos = new NancyRect(InStream);
                 if (InStream.debugprint) { Console.WriteLine(pos); }
+
+                writetext.WriteLine($"long      {frame}");
+                writetext.WriteLine($"long      {Enums.getCursorTemp(cursor)}");
             }
-            else if (HSType == 16)
+            else if (type == 16)
             {
                 int frame = InStream.ReadInt("Frame: ");
+
+                writetext.WriteLine($"long      {frame}");
             }
+
+            Utils.PrintDeps(Deps, writetext);
+
+            writetext.WriteLine("}\n");
 
             if (InStream.debugprint) { Console.WriteLine("---END SC---\n"); }
         }
@@ -402,7 +422,7 @@ namespace HIFFDecompile.Chunks
 
             //Not entirely sure what the bit widths are supposed to be
 
-            Utils.ParseDeps(InStream);
+            Dependency[] Deps = Utils.ParseDeps(InStream);
 
             InStream.Skip(36);
             Console.WriteLine("Fade Out Unimplemented");
@@ -490,7 +510,7 @@ namespace HIFFDecompile.Chunks
                 writetext.WriteLine($"RefSound  \"{refSounds[i]}\"");
             }
             writetext.WriteLine("EndCount  RefSound");
-            writetext.WriteLine($"int     {Enums.soundChannel[chan]}");
+            writetext.WriteLine($"int     {Enums.soundChannel[chan]}   // PLAYER_VOICE, etc.");
             writetext.WriteLine($"long    {Enums.loop[loop]}");
             writetext.WriteLine($"int     {volume}");
             writetext.WriteLine($"byte    {Enums.tf[nextScene]}         // next scene before sound ends?");
@@ -505,17 +525,15 @@ namespace HIFFDecompile.Chunks
             for (int i = 0; i < numRefSetFlags; i++)
             {
                 if (refSetFlags[i] == -1)
-                    writetext.WriteLine("RefSetFlag  EV_NO_EVENT     // when sound begins");
+                    writetext.WriteLine("  RefSetFlag  EV_NO_EVENT     // when sound begins");
                 else
-                    writetext.WriteLine($"RefSetFlag  {Utils.GetFlagName(refSetFlags[i])}     // when sound begins");
+                    writetext.WriteLine($"  RefSetFlag  {Utils.GetFlagName(refSetFlags[i])}     // when sound begins");
 
-                writetext.WriteLine($"int     {Enums.tf[RefSetFlagTruths[i]]}");
+                writetext.WriteLine($"  int     {Enums.tf[RefSetFlagTruths[i]]}            // Set flag TRUE or FALSE");
             }
             writetext.WriteLine("EndCount  RefSetFlag");
-            if (deps.Length > 0)
-            {
-                Utils.PrintDeps(deps, writetext);
-            }
+
+            Utils.PrintDeps(deps, writetext);
 
             writetext.WriteLine($"}}\n");
 
@@ -534,17 +552,30 @@ namespace HIFFDecompile.Chunks
             //Once or multiple
             byte trigger = InStream.ReadByte("Trigger: ");
 
-            Utils.ParseDeps(InStream);
+            //TODO:Not sure if deps allowed
+            Dependency[] Deps = Utils.ParseDeps(InStream);
 
             //SS_SPEC_EFFECT_CHAN1 = 9
             short channel = InStream.ReadShort("Channel: ");
 
             int volume = InStream.ReadInt("Volume: ");
 
+            writetext.WriteLine($"CHUNK ACT {{");
+            writetext.WriteLine($"char[48]  \"{ActDesc}\"");
+            writetext.WriteLine($"byte    {Enums.ACT_Type[type]}");
+            writetext.WriteLine($"byte    {Enums.execType[trigger]}");
+
+            writetext.WriteLine($"int     {Enums.soundChannel[channel]}");
+            writetext.WriteLine($"long    {volume}");
+
+            Utils.PrintDeps(Deps, writetext);
+
+            writetext.WriteLine($"}}\n");
+
             if (InStream.debugprint) { Console.WriteLine("   ---END Set Volume---"); }
         }
 
-        //Autosave?
+        //Second Chance?
         private static void SaveContinue(BetterBinaryReader InStream, StreamWriter writetext)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---Save Continue---"); }
@@ -557,7 +588,16 @@ namespace HIFFDecompile.Chunks
             //Once or multiple
             byte trigger = InStream.ReadByte("Trigger: ");
 
-            Utils.ParseDeps(InStream);
+            Dependency[] Deps = Utils.ParseDeps(InStream);
+
+            writetext.WriteLine($"CHUNK ACT {{");
+            writetext.WriteLine($"char[48]  \"{ActDesc}\"");
+            writetext.WriteLine($"byte    {Enums.ACT_Type[type]}");
+            writetext.WriteLine($"byte    {Enums.execType[trigger]}");
+
+            Utils.PrintDeps(Deps, writetext);
+
+            writetext.WriteLine($"}}\n");
 
             if (InStream.debugprint) { Console.WriteLine("   ---END Save Continue---"); }
         }
@@ -574,7 +614,7 @@ namespace HIFFDecompile.Chunks
             //Once or multiple
             byte trigger = InStream.ReadByte("Trigger: ");
 
-            Utils.ParseDeps(InStream);
+            Dependency[] Deps = Utils.ParseDeps(InStream);
 
             //TABLE_INDEX20 = 20
             byte idx = InStream.ReadByte("Idx: ");
@@ -582,6 +622,20 @@ namespace HIFFDecompile.Chunks
             byte operation = InStream.ReadByte("Operation: ");
 
             short value = InStream.ReadShort("Value: ");
+
+            writetext.WriteLine($"CHUNK ACT {{");
+            writetext.WriteLine($"char[48]  \"{ActDesc}\"");
+            writetext.WriteLine($"byte    {Enums.ACT_Type[type]}");
+            writetext.WriteLine($"byte    {Enums.execType[trigger]}");
+
+            //TODO: table index enum
+            writetext.WriteLine($"byte    {idx}  //value to test");
+            writetext.WriteLine($"byte    {Enums.value[value]}");
+            writetext.WriteLine($"int    {value}        // and be negative or positive integer");
+
+            Utils.PrintDeps(Deps, writetext);
+
+            writetext.WriteLine($"}}\n");
 
             if (InStream.debugprint) { Console.WriteLine("   ---END Set Value---"); }
         }
@@ -598,7 +652,7 @@ namespace HIFFDecompile.Chunks
             //Once or multiple
             byte trigger = InStream.ReadByte("Trigger: ");
 
-            Utils.ParseDeps(InStream);
+            Dependency[] Deps = Utils.ParseDeps(InStream);
 
             //TABLE_INDEX20  = 20
             byte tableIndex = InStream.ReadByte("Table Index: ");
@@ -627,6 +681,17 @@ namespace HIFFDecompile.Chunks
             if (InStream.IsEOF() != true && InStream.ReadByte() != 0)
                 InStream.Skip(-1);
 
+            writetext.WriteLine($"CHUNK ACT {{");
+            writetext.WriteLine($"char[48]  \"{ActDesc}\"");
+            writetext.WriteLine($"byte    {Enums.ACT_Type[type]}");
+            writetext.WriteLine($"byte    {Enums.execType[trigger]}");
+
+            writetext.WriteLine($"UNIMPLEMENTED SNIP");
+
+            Utils.PrintDeps(Deps, writetext);
+
+            writetext.WriteLine($"}}\n");
+
             if (InStream.debugprint) { Console.WriteLine("   ---END Set Value Combo---"); }
         }
 
@@ -642,7 +707,7 @@ namespace HIFFDecompile.Chunks
             //Once or multiple
             byte trigger = InStream.ReadByte("Trigger: ");
 
-            Utils.ParseDeps(InStream);
+            Dependency[] Deps = Utils.ParseDeps(InStream);
 
             //"MS for each fade"
             int fadeTIme = InStream.ReadInt("Fade MS: ");
@@ -653,7 +718,56 @@ namespace HIFFDecompile.Chunks
             NancyRect color = new NancyRect(InStream.ReadByte(), InStream.ReadByte(), InStream.ReadByte(), InStream.ReadByte());
             if (InStream.debugprint) { Console.WriteLine("Color: " + color); }
 
+            writetext.WriteLine($"CHUNK ACT {{");
+            writetext.WriteLine($"char[48]  \"{ActDesc}\"");
+            writetext.WriteLine($"byte    {Enums.ACT_Type[type]}");
+            writetext.WriteLine($"byte    {Enums.execType[trigger]}");
+
+            writetext.WriteLine($"UNIMPLEMENTED SNIP");
+
+            Utils.PrintDeps(Deps, writetext);
+
+            writetext.WriteLine($"}}\n");
+
             if (InStream.debugprint) { Console.WriteLine("   ---END Special Effect---"); }
+        }
+
+        private static void UI_Control(BetterBinaryReader InStream, StreamWriter writetext)
+        {
+            if (InStream.debugprint) { Console.WriteLine("   ---UI Control---"); }
+
+            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
+
+            byte type = InStream.ReadByte("Type: ");
+            //Once or multiple
+            byte trigger = InStream.ReadByte("Trigger: ");
+
+            //Not sure if deps are allowed
+            Dependency[] Deps = Utils.ParseDeps(InStream);
+
+            /*
+            long    Enable_UIAction  //Enable_UIAction
+            RefUI   "ShowInv"   // UI Object name
+            RefAutotext ""    // Autotext for SetText calls
+            double    0.0   // Value for SetValue calls
+            */
+            Console.WriteLine("Stream: " + InStream.Position());
+            InStream.Skip(78);
+            Console.WriteLine("UI Control not implemented...");
+
+            writetext.WriteLine($"CHUNK ACT {{");
+            writetext.WriteLine($"char[48]  \"{ActDesc}\"");
+            writetext.WriteLine($"byte    {Enums.ACT_Type[type]}");
+            writetext.WriteLine($"byte    {Enums.execType[trigger]}");
+
+            writetext.WriteLine($"UNIMPLEMENTED SNIP");
+
+            Utils.PrintDeps(Deps, writetext);
+
+            writetext.WriteLine($"}}\n");
+
+            if (InStream.debugprint) { Console.WriteLine("   ---END Fade Out---"); }
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Sapphire_Extract_Helpers;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Diagnostics;
@@ -7,7 +8,7 @@ using System.IO;
 
 namespace AVFExtract
 {
-    internal class Program
+    internal static class Program
     {
         private static void Main(string[] args)
         {
@@ -161,6 +162,10 @@ namespace AVFExtract
                 //var image2 = Image.LoadPixelData<Rgb24>(outColors, width, height);
                 //image2.Save("bar.jpg");*/
 
+                //Very much slower
+                //PngEncoder encd = new PngEncoder() { CompressionLevel = PngCompressionLevel.BestCompression };
+                //PngEncoder encd = new PngEncoder() { };
+
                 //if multiple frames create a subfolder
                 if (numEntries > 1)
                 {
@@ -182,7 +187,7 @@ namespace AVFExtract
             if (numEntries > 1)
             {
                 Console.WriteLine("\n\nConverting AVF png frames to mp4. The console will lockup durring this process.");
-                Console.WriteLine(ExecuteFFMpeg($"-hide_banner -y -i \"{InStream.FileNameWithoutExtension}\\%d.png\" -r 15 \"{InStream.FileNameWithoutExtension}\\{InStream.FileNameWithoutExtension}\".mp4"));
+                Console.WriteLine(ExecuteFFMpeg($"-hide_banner -y -i \"{InStream.FileNameWithoutExtension}\\%d.bmp\" -r 15 \"{InStream.FileNameWithoutExtension}\\{InStream.FileNameWithoutExtension}\".mp4"));
                 Console.WriteLine("Done.");
 
                 //FFMpegHelper.VerifyFFMpegExists(new FFOptions());

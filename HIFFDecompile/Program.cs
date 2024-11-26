@@ -104,6 +104,8 @@ namespace HIFFDecompile
             FileInfo file = new FileInfo(Path.GetDirectoryName(InStream.FilePath) + "/Output/" + Path.GetFileNameWithoutExtension(InStream.FilePath) + ".htxt");
             file.Directory?.Create();
             StreamWriter writetext = new StreamWriter(file.FullName);
+            if (Verbose)
+                writetext.AutoFlush = true;
 
             DecompChunk(InStream, writetext);
             writetext.Close();
@@ -367,7 +369,7 @@ namespace HIFFDecompile
             }
 
             //might be byte aligned
-            if (InStream.IsEOF() != true && InStream.ReadByte() != 0)
+            if (!InStream.IsEOF() && InStream.ReadByte() != 0)
                 InStream.Skip(-1);
 
             //can shorten to use

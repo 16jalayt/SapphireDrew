@@ -1,7 +1,6 @@
 ﻿using Sapphire_Extract_Helpers;
 using System;
 using System.Buffers.Binary;
-using System.ComponentModel.Design;
 using System.IO;
 using System.Text;
 

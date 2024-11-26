@@ -1,6 +1,4 @@
 ﻿using HIFFCompile.ActionTypes;
-using HIFFCompile.Chunks;
-using Sapphire_Extract_Helpers;
 using System;
 using System.IO;
 

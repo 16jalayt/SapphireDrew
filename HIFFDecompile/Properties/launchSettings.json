@@ -2,7 +2,7 @@
   "profiles": {
     "HIFFDecompile": {
       "commandName": "Project",
-      "commandLineArgs": "S2038.hiff -v -l -f=flags.hiff"
+      "commandLineArgs": "S3511.hiff -v -l -f=flags.hiff"
     }
   }
 }
