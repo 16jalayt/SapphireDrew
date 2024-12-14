@@ -10,15 +10,9 @@ namespace CIFExtract
         private static void Main(string[] args)
         {
             //Tool status
-            //Console.WriteLine($"CURRENTLY BROKEN\n");
-            Console.WriteLine($"EXPEREMENTAL\n");
-            //Console.WriteLine($"UNVALIDATED\n");
-
-            if (!OperatingSystem.IsWindows())
-            {
-                Console.WriteLine("Currently only supported on Windows due to dependency on luac.exe. Exiting...");
-                return;
-            }
+            //Console.WriteLine("CURRENTLY BROKEN\n");
+            //Console.WriteLine("EXPEREMENTAL\n");
+            Console.WriteLine("UNVALIDATED\n");
 
             if (args.Length < 1)
             {

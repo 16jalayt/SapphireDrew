@@ -30,7 +30,7 @@ namespace HIFFDecompile.Chunks
                 case 91:
                     Flags(InStream, writetext);
                     break;
-                //AT_SCENE_FRAME_HS = 19, AT_SCENE_FRAME = 16, noral change = 15
+                //AT_SCENE_FRAME_HS = 19, AT_SCENE_FRAME = 16, normal change = 15
                 case 19:
                 case 16:
                 case 15:

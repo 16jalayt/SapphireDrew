@@ -4,12 +4,15 @@ using System.IO;
 
 namespace HIFFCompile
 {
-    internal class Act
+    internal static class Act
     {
         public static bool ParseAct(ref BinaryWriter outStream, int actType)
         {
             switch (actType)
             {
+                //AT_SCENE_FRAME_HS
+                case 19:
+                    return Scene.SC(ref outStream, true, true);
                 //AT_HIDE_CURSOR_AND_DISABLE_INPUT1
                 case 28:
                     return Misc.Cur_Hide(ref outStream);
@@ -36,7 +39,7 @@ namespace HIFFCompile
                     return Misc.POP(ref outStream);
 
                 default:
-                    Console.WriteLine($"Unknown ACT chunk type:'{actType}' from:'{InFile.GetLine()}' on line {InFile.pos}");
+                    Console.WriteLine($"Unknown ACT chunk type:'{actType}' from:'{InFile.lines[InFile.pos - 1]}' on line {InFile.pos}");
                     return false;
             }
         }

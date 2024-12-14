@@ -46,6 +46,12 @@ namespace CIFExtract
             ////////////////////////////
             if (verMajor == 3)
             {
+                if (!OperatingSystem.IsWindows())
+                {
+                    Console.WriteLine("V3 (#19 Venice and later) only supported on Windows due to dependency on luac.exe. Exiting...");
+                    return;
+                }
+
                 //Only way to tell if tree or chunk is to check for a first chunk header.
                 string header2 = Helpers.String(InStream.ReadBytes(24)).Trim('\0');
                 if (header2 != "CIF FILE HerInteractive")

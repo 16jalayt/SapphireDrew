@@ -1,6 +1,6 @@
 ﻿namespace HIFFCompile.Chunks
 {
-    internal class Sound
+    internal static class Sound
     {
     }
 }

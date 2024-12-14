@@ -12,11 +12,11 @@ namespace HIFFCompile
     {
         //private static HashSet<string> keywords = new HashSet<string>
         //{ "byte", "int", "long", "RefDep", "RefFlag", "RefOvlStat" };
-        public static string[] keywords = { "byte", "int", "long", "RefDep", "RefFlag", "RefOvlStat", "RefSetFlag" };
+        //public static string[] keywords = { "byte", "int", "long", "RefDep", "RefFlag", "RefOvlStat", "RefSetFlag", "RefScene" };
 
         public static string[] stringKeywords = { "RefAVF", "RefSound", "RefHif", "RefOvlStat" };
 
-        public static string[] lines = Array.Empty<string>();
+        public static string[] lines = [];
         public static int pos = 0;
         private static readonly Regex _regex = new Regex(@"\s+");
 
@@ -28,7 +28,7 @@ namespace HIFFCompile
             {
                 lines[pos] = lines[pos].Substring(0, lines[pos].IndexOf("//"));
                 //If line has only comment, get next available line
-                if (lines[pos] == "")
+                if (lines[pos]?.Length == 0)
                     GetNextLine();
             }
 
@@ -42,7 +42,7 @@ namespace HIFFCompile
             return lines[pos];
         }
 
-        public static bool GetObject<T>(ref BinaryWriter outStream, out int returnedObject, string[]? enumType = null, Dictionary<int, string>? dictType = null)
+        public static bool GetObject<T>(ref BinaryWriter outStream, string wantedWord, out int returnedObject, string[]? enumType = null, Dictionary<int, string>? dictType = null)
         {
             returnedObject = -1;
 
@@ -56,9 +56,9 @@ namespace HIFFCompile
             operand.Add(line.Substring(line.IndexOf(' ')));
             operand[0] = operand[0].Trim(' ');
 
-            if (Array.IndexOf(keywords, keyword) == -1)
+            if (wantedWord != keyword)
             {
-                Console.WriteLine($"Invalid type: '{keyword}' on line {pos + 1}. Must be a valid keyword.");
+                //Console.WriteLine($"Invalid type: '{keyword}' on line {pos + 1}. Must be a valid keyword.");
                 return false;
             }
 
@@ -72,7 +72,7 @@ namespace HIFFCompile
             //TODO: prints same values for 1,2,3,4
             foreach (string item in operand)
             {
-                inEnum = ParseObj(item, enumType, dictType);
+                inEnum = ParseObj(wantedWord, item, enumType, dictType);
                 if (inEnum == -1)
                     return false;
 
@@ -88,7 +88,7 @@ namespace HIFFCompile
             return true;
         }
 
-        public static int ParseObj(string operand, string[]? enumType, Dictionary<int, string>? dictType)
+        public static int ParseObj(string wantedWord, string operand, string[]? enumType, Dictionary<int, string>? dictType)
         {
             //if not a number, either enum or syntax error
             if (!int.TryParse(operand, out int inEnum))
@@ -100,7 +100,7 @@ namespace HIFFCompile
                     {
                         if (enumType == Enums.tf)
                         {
-                            inEnum = parseTF(operand);
+                            inEnum = ParseTF(operand);
                         }
                         else
                         {
@@ -114,12 +114,13 @@ namespace HIFFCompile
                     inEnum = dictType.FirstOrDefault(x => x.Value == operand).Key;
                     if (inEnum == 0)
                     {
-                        Console.WriteLine($"'{operand}' on line {pos + 1} is not a number or 'ACT Type' value.");
+                        Console.WriteLine($"'{operand}' on line {pos + 1} is not a number or Enum value.");
                         return -1;
                     }
                 }
                 else
                 {
+                    //TODO: be more specific using wanted word
                     Console.WriteLine($"'{operand}' on line {pos + 1}. Must contain either a number/enum value or a rect. i.e. 0,0,0,0");
                     return -1;
                 }
@@ -127,33 +128,27 @@ namespace HIFFCompile
             return inEnum;
         }
 
-        public static bool GetNextObject<T>(ref BinaryWriter outStream, out int returnedObject, string[]? enumType = null, Dictionary<int, string>? dictType = null)
+        public static bool GetNextObject<T>(ref BinaryWriter outStream, string wantedWord, out int returnedObject, string[]? enumType = null, Dictionary<int, string>? dictType = null)
         {
             GetNextLine();
             returnedObject = -1;
-            return GetObject<T>(ref outStream, out returnedObject, enumType, dictType);
+            return GetObject<T>(ref outStream, wantedWord, out returnedObject, enumType, dictType);
         }
 
-        public static bool GetObject<T>(ref BinaryWriter outStream, string[]? enumType = null, Dictionary<int, string>? dictType = null)
+        public static bool GetObject<T>(ref BinaryWriter outStream, string wantedWord, string[]? enumType = null, Dictionary<int, string>? dictType = null)
         {
-            return GetObject<T>(ref outStream, out _, enumType, dictType);
+            return GetObject<T>(ref outStream, wantedWord, out _, enumType, dictType);
         }
 
-        public static bool GetNextObject<T>(ref BinaryWriter outStream, string[]? enumType = null, Dictionary<int, string>? dictType = null)
+        public static bool GetNextObject<T>(ref BinaryWriter outStream, string wantedWord, string[]? enumType = null, Dictionary<int, string>? dictType = null)
         {
-            return GetNextObject<T>(ref outStream, out _, enumType, dictType);
+            return GetNextObject<T>(ref outStream, wantedWord, out _, enumType, dictType);
         }
 
-        public static bool GetString(ref BinaryWriter outStream, int length)
+        //TODO: convert functions like these to return value instead of ref. Just null check at callsite.
+        public static string? WriteString(ref BinaryWriter outStream, int length)
         {
-            //Make returned string optional
-            string temp = "";
-            return GetString(ref outStream, length, ref temp);
-        }
-
-        public static bool GetString(ref BinaryWriter outStream, int length, ref string value)
-        {
-            //split input keyword and expression
+            //Split input keyword and expression
             string[] parts = Tokenize(GetLine());
 
             //Reassemble the quoted part of the string. If there are spaces, it will be split
@@ -162,26 +157,26 @@ namespace HIFFCompile
                 parts[1] = parts[1] + " " + parts[i];
             }
 
-            //validate keyword
+            //Validate keyword
             if (Array.IndexOf(stringKeywords, parts[0]) == -1)
             {
-                if (parts[0].Contains('[') && parts[0].Contains("]"))
+                if (parts[0].Contains('[') && parts[0].Contains(']'))
                 {
-                    parts[0] = parts[0].Substring(parts[0].IndexOf("[") + 1);
-                    parts[0] = parts[0].Substring(0, parts[0].LastIndexOf("]"));
+                    parts[0] = parts[0].Substring(parts[0].IndexOf('[') + 1);
+                    parts[0] = parts[0].Substring(0, parts[0].LastIndexOf(']'));
                 }
                 else
                 {
                     Console.WriteLine($"Unknown keyword: '{parts[0]}' on line {pos + 1}. Must be a valid keyword");
-                    return false;
+                    return null;
                 }
             }
 
-            //validate expression
+            //Validate expression
             if (parts[1].Length < 1 || parts[1].Length > length)
             {
                 Console.WriteLine($"Expression too long: '{parts[1]}' on line {pos + 1}. Must be less than {length}");
-                return false;
+                return null;
             }
 
             //Make sure quoted unless reserved keyword
@@ -189,37 +184,31 @@ namespace HIFFCompile
             if (numQuotes != 2 && parts[1] != "NO_ART_SCENE")
             {
                 Console.WriteLine($"Expression must be in double quotes \"x\": '{parts[1]}' on line {pos + 1}");
-                return false;
+                return null;
             }
 
             string SceneDesc;
             if (numQuotes == 2)
             {
                 //Trim line
-                SceneDesc = parts[1].Substring(parts[1].IndexOf("\"") + 1);
-                SceneDesc = SceneDesc.Substring(0, SceneDesc.LastIndexOf("\""));
+                SceneDesc = parts[1].Substring(parts[1].IndexOf('\"') + 1);
+                SceneDesc = SceneDesc.Substring(0, SceneDesc.LastIndexOf('\"'));
             }
             else
+            {
                 SceneDesc = parts[1];
-
-            value = SceneDesc;
+            }
 
             SceneDesc = SceneDesc.PadRight(length, '\0');
             outStream.Write(Encoding.UTF8.GetBytes(SceneDesc));
 
-            return true;
+            return SceneDesc;
         }
 
-        public static bool GetNextString(ref BinaryWriter outStream, int length)
+        public static string? WriteNextString(ref BinaryWriter outStream, int length)
         {
             GetNextLine();
-            return GetString(ref outStream, length);
-        }
-
-        public static bool GetNextString(ref BinaryWriter outStream, int length, ref string value)
-        {
-            GetNextLine();
-            return GetString(ref outStream, length, ref value);
+            return WriteString(ref outStream, length);
         }
 
         public static string[] Tokenize(string input)
@@ -227,11 +216,9 @@ namespace HIFFCompile
             return _regex.Split(input);
         }
 
-        public static int parseTF(string operand)
+        public static int ParseTF(string operand)
         {
-            int inEnum;
-
-            inEnum = Array.FindIndex(Enums.tf, x => x.Contains(operand));
+            int inEnum = Array.FindIndex(Enums.tf, x => x.Contains(operand));
             if (inEnum == -1)
             {
                 inEnum = Array.FindIndex(Enums.tfCamel, x => x.Contains(operand));

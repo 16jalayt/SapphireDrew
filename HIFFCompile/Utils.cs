@@ -71,7 +71,7 @@ namespace HIFFCompile
             return posEndDeps;
         }*/
 
-        public static int ParseDepsNew(ref BinaryWriter outStream, int actType)
+        public static int ParseDeps(ref BinaryWriter outStream, int actType)
         {
             int posPlaceholder = InFile.pos;
             long depsPleceholder = outStream.BaseStream.Position;
@@ -102,12 +102,12 @@ namespace HIFFCompile
                         return -1;
                     }
 
-                    int variable = InFile.ParseObj(tokens[i], null, null);
+                    int variable = InFile.ParseObj("if", tokens[i], null, null);
                     if (variable == -1)
                         return -1;
                     outStream.Write((short)variable);
 
-                    int truth = InFile.parseTF(tokens[i + 1]);
+                    int truth = InFile.ParseTF(tokens[i + 1]);
                     if (truth == -1)
                         return -1;
                     outStream.Write((short)truth);
@@ -161,22 +161,22 @@ namespace HIFFCompile
                 numDeps++;
                 //Console.WriteLine($"Dep start {pos + 1}.");
                 //TODO: double check length
-                if (!InFile.GetNextObject<short>(ref outStream, enumType: Enums.depType))
+                if (!InFile.GetNextObject<short>(ref outStream, "RefDep", enumType: Enums.depType))
                     return;
                 //TODO: ??? game specific. Need table or something.
                 ////Then again, decompiled would be number anyway
-                if (!InFile.GetNextObject<short>(ref outStream, enumType: Enums.execType))
+                if (!InFile.GetNextObject<short>(ref outStream, "int", enumType: Enums.execType))
                     return;
 
                 //condition FALSE=0 TRUE=1  When time: _EQUAL_TO, _GREATER_THAN, _GREATER_THAN_OR_EQUAL, _LESS_THAN, _LESS_THAN_OR_EQUAL
-                if (!InFile.GetNextObject<short>(ref outStream, enumType: Enums.tf))
+                if (!InFile.GetNextObject<short>(ref outStream, "int", enumType: Enums.tf))
                     return;
                 //0=AND 1=OR
-                if (!InFile.GetNextObject<short>(ref outStream, enumType: Enums.depFlag))
+                if (!InFile.GetNextObject<short>(ref outStream, "int", enumType: Enums.depFlag))
                     return;
 
                 //Rect called "time". time format: StartHr/StartMin/EndHr/EndMin
-                if (!InFile.GetNextObject<short>(ref outStream))
+                if (!InFile.GetNextObject<short>(ref outStream, "int"))
                     return;
 
                 //Recurse to check if another dep

@@ -9,9 +9,9 @@ namespace CIFPack
         private static void Main(string[] args)
         {
             //Tool status
-            Console.WriteLine($"CURRENTLY BROKEN\n");
-            //Console.WriteLine($"EXPEREMENTAL\n");
-            //Console.WriteLine($"UNVALIDATED\n");
+            Console.WriteLine("CURRENTLY BROKEN\n");
+            //Console.WriteLine("EXPEREMENTAL\n");
+            //Console.WriteLine("UNVALIDATED\n");
 
             if (args.Length < 2)
             {

@@ -55,6 +55,14 @@ namespace Sapphire_Extract_Helpers
                    {145, "AT_START_SOUND"},
                    {147, "AT_SET_VOLUME"}};
 
+        public static Dictionary<int, string> cursorDict =
+              new Dictionary<int, string>(){
+                  {10, "BACK_CURSOR"},
+                  {12, "FORWARD_CURSOR"},
+                   {19, "UTURN_CURSOR"},
+                   {22, "MANIPULATE_EXAM_CURSOR"},
+                   {41, "TAKE"}};
+
         public static string getCursorTemp(int num)
         {
             if (num == 10)

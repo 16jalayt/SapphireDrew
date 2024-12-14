@@ -9,13 +9,13 @@ namespace XSheetDecompile
         private static void Main(string[] args)
         {
             //Tool status
-            //Console.WriteLine($"CURRENTLY BROKEN\n");
-            Console.WriteLine($"EXPEREMENTAL\n");
-            //Console.WriteLine($"UNVALIDATED\n");
+            //Console.WriteLine("CURRENTLY BROKEN\n");
+            Console.WriteLine("EXPEREMENTAL\n");
+            //Console.WriteLine("UNVALIDATED\n");
 
             if (args.Length < 1)
             {
-                Console.WriteLine($"Usage is XSheetDecompile.exe filename\n");
+                Console.WriteLine("Usage is XSheetDecompile.exe filename\n");
                 return;
             }
 
@@ -39,13 +39,13 @@ namespace XSheetDecompile
             InStream.Skip(9);
 
             if (!Helpers.AssertInt(InStream, 2))
-                Console.WriteLine($"The unknown value of 2 at the begining is different\n");
+                Console.WriteLine("The unknown value of 2 at the begining is different\n");
 
             short NumFrames = InStream.ReadShort();
             Console.WriteLine($"Number of frames: {NumFrames}");
 
             if (!Helpers.AssertShort(InStream, 2))
-                Console.WriteLine($"The unknown value of 2 after numframes is different\n");
+                Console.WriteLine("The unknown value of 2 after numframes is different\n");
 
             string BodyName = Helpers.String(InStream.ReadBytes(33)).Trim('\0').ToLower();
             Console.WriteLine($"BodyName: {BodyName}");
@@ -67,7 +67,7 @@ namespace XSheetDecompile
             InStream.Skip(32);
 
             if (!Helpers.AssertInt(InStream, 66))
-                Console.WriteLine($"The unknown value of 66 before the frames is different\n");
+                Console.WriteLine("The unknown value of 66 before the frames is different\n");
 
             int[] framestorage = new int[NumFrames];
             for (int i = 0; i < NumFrames; i++)

@@ -6,7 +6,7 @@ using System.Text;
 
 namespace HIFFCompile
 {
-    internal class ParseHIFF
+    internal static class ParseHIFF
     {
         public static void Parse(bool olderGame, ref BinaryWriter outStream, string inFile)
         {
@@ -28,12 +28,14 @@ namespace HIFFCompile
             outStream.Write(Encoding.UTF8.GetBytes("DATA"));
             //Chunk length placeholder
             outStream.Write((int)-1);
-            long dataPlace = outStream.BaseStream.Position;
+            long lengthPlace = outStream.BaseStream.Position;
 
             for (; InFile.pos < InFile.lines.Length; InFile.pos++)
             {
-                if (InFile.GetLine().StartsWith("//") || InFile.GetLine() == "")
+                if (InFile.GetLine().StartsWith("//") || InFile.GetLine()?.Length == 0)
+                {
                     continue;
+                }
                 //TODO: change to generic switch token insted of exact match
                 else if (InFile.GetLine() == "CHUNK ACT {")
                 {
@@ -41,24 +43,24 @@ namespace HIFFCompile
                     long actPlace = outStream.BaseStream.Position;
                     outStream.Write((int)-1);
 
-                    string sceneDescription = "";
+                    string? sceneDescription = InFile.WriteNextString(ref outStream, 48);
                     //chunk description
-                    if (!InFile.GetNextString(ref outStream, 48, ref sceneDescription))
+                    if (sceneDescription == null)
                         break;
 
                     int actType = -1;
                     //Act Chunk Type
-                    if (!InFile.GetNextObject<byte>(ref outStream, out actType, dictType: Enums.ACT_Type))
+                    if (!InFile.GetNextObject<byte>(ref outStream, "byte", out actType, dictType: Enums.ACT_Type))
                     {
                         Console.WriteLine($"Unknown action record type with desc \"{sceneDescription}\" at {InFile.pos + 1}.");
                         break;
                     }
 
                     //Exec type
-                    if (!InFile.GetNextObject<byte>(ref outStream, enumType: Enums.execType))
+                    if (!InFile.GetNextObject<byte>(ref outStream, "byte", enumType: Enums.execType))
                         break;
 
-                    int posEndDeps = Utils.ParseDepsNew(ref outStream, actType);
+                    int posEndDeps = Utils.ParseDeps(ref outStream, actType);
                     //Error parsing
                     if (posEndDeps == -1)
                         break;
@@ -87,26 +89,26 @@ namespace HIFFCompile
                     outStream.Write((int)-1);
 
                     //Scene description
-                    if (!InFile.GetNextString(ref outStream, 50))
+                    if (InFile.WriteNextString(ref outStream, 50) == null)
                         break;
                     //Background file without extension
-                    if (!InFile.GetNextString(ref outStream, 33))
+                    if (InFile.WriteNextString(ref outStream, 33) == null)
                         break;
                     //Background sound
-                    if (!InFile.GetNextString(ref outStream, 33))
+                    if (InFile.WriteNextString(ref outStream, 33) == null)
                         break;
 
                     //Channel of backgound sound
-                    if (!InFile.GetNextObject<short>(ref outStream, enumType: Enums.soundChannel))
+                    if (!InFile.GetNextObject<short>(ref outStream, "int", enumType: Enums.soundChannel))
                         break;
                     //Loop background sound?
-                    if (!InFile.GetNextObject<int>(ref outStream, enumType: Enums.loop))
+                    if (!InFile.GetNextObject<int>(ref outStream, "long", enumType: Enums.loop))
                         break;
                     //Left channel volume for background sound
-                    if (!InFile.GetNextObject<short>(ref outStream, enumType: null))
+                    if (!InFile.GetNextObject<short>(ref outStream, "int", enumType: null))
                         break;
                     //Right channel volume for background sound
-                    if (!InFile.GetNextObject<short>(ref outStream, enumType: null))
+                    if (!InFile.GetNextObject<short>(ref outStream, "int", enumType: null))
                         break;
 
                     Utils.WriteLength(ref outStream, scenPlace);
@@ -135,7 +137,7 @@ namespace HIFFCompile
                     short numDeps = 0;
                     while (InFile.GetNextLine() != "EndCount RefHif")
                     {
-                        InFile.GetString(ref outStream, 33);
+                        InFile.WriteString(ref outStream, 33);
                         numDeps++;
                     }
 
@@ -159,13 +161,15 @@ namespace HIFFCompile
             }
 
             if (InFile.pos < InFile.lines.Length)
+            {
                 Console.WriteLine($"\nSyntax error in: '{inFile}'");
+            }
             else
             {
                 //update data chunk length at beginning of file
                 long endChunk = outStream.BaseStream.Position;
-                outStream.Seek((int)dataPlace - 4, SeekOrigin.Begin);
-                int length = BinaryPrimitives.ReverseEndianness((int)(endChunk - dataPlace));
+                outStream.Seek((int)lengthPlace - 4, SeekOrigin.Begin);
+                int length = BinaryPrimitives.ReverseEndianness((int)(endChunk - lengthPlace));
                 outStream.Write(length);
                 outStream.Seek((int)endChunk, SeekOrigin.Begin);
 

@@ -189,25 +189,6 @@ namespace AVFExtract
                 Console.WriteLine("\n\nConverting AVF png frames to mp4. The console will lockup durring this process.");
                 Console.WriteLine(ExecuteFFMpeg($"-hide_banner -y -i \"{InStream.FileNameWithoutExtension}\\%d.bmp\" -r 15 \"{InStream.FileNameWithoutExtension}\\{InStream.FileNameWithoutExtension}\".mp4"));
                 Console.WriteLine("Done.");
-
-                //FFMpegHelper.VerifyFFMpegExists(new FFOptions());
-
-                //IEnumerable<string> screenshotPaths = Directory.GetFiles(InStream.FileNameWithoutExtension).Select(p => Path.GetFullPath(p));
-                //IEnumerable<ImageInfo> imageSequence = screenshotPaths.Select(path => ImageInfo.FromPath(path));
-                //only works with png?
-                //FFMpeg.JoinImageSequence($"{InStream.FileNameWithoutExtension}\\{InStream.FileNameWithoutExtension}2.mp4", frameRate: 15, imageSequence.ToArray());
-
-                /*FFMpegArguments
-                    .FromFileInput($"{InStream.FileNameWithoutExtension}\\%d.png")
-                       //.FromFileInput("C:\\Users\\16jal\\source\\repos\\SapphireDrew\\AVFExtract\\bin\\Debug\\net6.0\\CEM_TombStairs_ANIM\\0.bmp")
-                       .OutputToFile($"{InStream.FileNameWithoutExtension}\\{InStream.FileNameWithoutExtension}.mp4", true, options => options
-                       .WithVideoCodec(VideoCodec.LibX264)
-                       .WithConstantRateFactor(21)
-                       .WithAudioCodec(AudioCodec.Aac)
-                       .WithVariableBitrate(4)
-                       .WithFastStart()
-                       .WithFramerate(15))
-                       .ProcessSynchronously();*/
             }
         }
 

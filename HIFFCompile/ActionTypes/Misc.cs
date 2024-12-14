@@ -2,7 +2,7 @@
 
 namespace HIFFCompile.ActionTypes
 {
-    internal class Misc
+    internal static class Misc
     {
         public static bool Cur_Hide(ref BinaryWriter outStream)
         {

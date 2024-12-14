@@ -4,7 +4,7 @@ using System.IO;
 
 namespace HIFFCompile.ActionTypes
 {
-    internal class Hot
+    internal static class Hot
     {
         public static bool FlagsHS(ref BinaryWriter outStream, bool withHS)
         {
@@ -22,10 +22,10 @@ namespace HIFFCompile.ActionTypes
             while (InFile.GetNextLine() != "EndCount RefSetFlag")
             {
                 //Flag to set
-                if (!InFile.GetObject<short>(ref outStream))
+                if (!InFile.GetObject<short>(ref outStream, "RefSetFlag"))
                     return false;
                 //Value to set
-                if (!InFile.GetNextObject<short>(ref outStream, Enums.tf))
+                if (!InFile.GetNextObject<short>(ref outStream, "int", Enums.tf))
                     return false;
                 numFlags++;
             }
@@ -38,7 +38,7 @@ namespace HIFFCompile.ActionTypes
             if (withHS)
             {
                 //Set hover cursor
-                if (!InFile.GetNextObject<int>(ref outStream, Enums.cursor))
+                if (!InFile.GetNextObject<int>(ref outStream, "int", Enums.cursor))
                     return false;
 
                 if (InFile.GetNextLine() != "BeginCount long")
@@ -56,10 +56,10 @@ namespace HIFFCompile.ActionTypes
                 while (InFile.GetNextLine() != "EndCount long")
                 {
                     //Frame hotspot is active in
-                    if (!InFile.GetObject<short>(ref outStream))
+                    if (!InFile.GetObject<short>(ref outStream, "long"))
                         return false;
                     //screen rect
-                    if (!InFile.GetNextObject<int>(ref outStream))
+                    if (!InFile.GetNextObject<int>(ref outStream, "long"))
                         return false;
                     numHots++;
                 }
