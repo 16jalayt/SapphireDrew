@@ -8,7 +8,7 @@ namespace HIFFCompile
 {
     internal class Utils
     {
-        public static int WriteLength(ref BinaryWriter outStream, long placeholder)
+        public static int WriteLength(BinaryWriter outStream, long placeholder)
         {
             long endChunk = outStream.BaseStream.Position;
             outStream.Seek((int)placeholder, SeekOrigin.Begin);
@@ -71,7 +71,7 @@ namespace HIFFCompile
             return posEndDeps;
         }*/
 
-        public static int ParseDeps(ref BinaryWriter outStream, int actType)
+        /*public static int ParseDeps(ref BinaryWriter outStream, int actType)
         {
             int posPlaceholder = InFile.pos;
             long depsPleceholder = outStream.BaseStream.Position;
@@ -188,6 +188,24 @@ namespace HIFFCompile
                 InFile.pos++;
                 depsHelper(ref outStream, ref numDeps);
             }
+        }*/
+
+        public static void CheckOpenClosure()
+        {
+            //Covers both coding styles. Same line prefered.
+            if (InFile.GetNextToken() == "{" || InFile.GetNextLine() == "{")
+                return;
+
+            throw new Exception($"Chunk needs a \'{{\' character to open the closure. On line '{InFile.pos}' found instead: '{InFile.GetLine()}'");
+        }
+
+        public static void CheckCloseClosure()
+        {
+            //Covers both coding styles. Same line prefered.
+            if (InFile.GetNextToken() == "}" || InFile.GetNextLine() == "}")
+                return;
+
+            throw new Exception($"Chunk needs a \'}}\' character to close the closure. On line '{InFile.pos}' found instead: '{InFile.GetLine()}'");
         }
     }
 }

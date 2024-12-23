@@ -24,6 +24,7 @@ namespace HIFFCompile
             }
             string inFile = args[0];
 
+            //Currently only generates flags evnt chunk
             bool olderGame = false;
             if (args.Length > 1 && args[1] == "-o")
                 olderGame = true;
@@ -46,9 +47,13 @@ namespace HIFFCompile
                 outFile.Directory.Create();
                 BinaryWriter outStream = new BinaryWriter(new FileStream(outFile.FullName, FileMode.Create), Encoding.UTF8);
 
-                InFile.lines = File.ReadLines(inFile).ToArray();
+                //Insert placeholder at zero so line numbers match
+                InFile.lines = InFile.lines.Concat(File.ReadLines(inFile).ToArray()).ToArray();
 
-                ParseHIFF.Parse(olderGame, ref outStream, inFile);
+                //Queue up first line so it is ready to use
+                InFile.GetNextLine();
+
+                ParseHIFF.Parse(olderGame, outStream, inFile);
 
                 outStream.Close();
             }

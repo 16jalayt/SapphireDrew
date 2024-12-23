@@ -8,21 +8,36 @@ using System.Text.RegularExpressions;
 
 namespace HIFFCompile
 {
+    //Has been rewritten to this program
     internal static class InFile
     {
         //private static HashSet<string> keywords = new HashSet<string>
         //{ "byte", "int", "long", "RefDep", "RefFlag", "RefOvlStat" };
         //public static string[] keywords = { "byte", "int", "long", "RefDep", "RefFlag", "RefOvlStat", "RefSetFlag", "RefScene" };
 
-        public static string[] stringKeywords = { "RefAVF", "RefSound", "RefHif", "RefOvlStat" };
+        //public static string[] stringKeywords = { "RefAVF", "RefSound", "RefHif", "RefOvlStat" };
 
-        public static string[] lines = [];
+        //left keyword, right type
+        private static Dictionary<string, string> keywordDict = new Dictionary<string, string>()
+        {
+            { "int", "short" },
+            { "long", "int" },
+            { "RefFlag", "int" }
+        };
+
+        //Insert placeholder at zero so line numbers match
+        public static string[] lines = ["Line 0 Placeholder"];
+
+        public static string[] lineTokens;
+
         public static int pos = 0;
-        private static readonly Regex _regex = new Regex(@"\s+");
+
+        public static int tokenPos = 0;
 
         public static string GetNextLine()
         {
             pos++;
+
             //ignore comments
             if (lines[pos].Contains("//"))
             {
@@ -32,8 +47,18 @@ namespace HIFFCompile
                     GetNextLine();
             }
 
-            lines[pos] = lines[pos].Trim();
-            lines[pos] = Regex.Replace(lines[pos], @"\s+", " ");
+            //lines[pos] = lines[pos].Trim();
+            //lines[pos] = Regex.Replace(lines[pos], _regex.ToString(), " ");
+
+            //Tokenize respecting quotes
+            string pattern = "[^\\s\"']+|\"([^\"]*)\"|'([^']*)'";
+            lineTokens = Regex.Matches(lines[pos], pattern)
+                .OfType<Match>()
+                .Select(m => m.Groups[0].Value.Replace("\"", ""))
+                .ToArray();
+
+            tokenPos = 0;
+
             return lines[pos];
         }
 
@@ -42,178 +67,81 @@ namespace HIFFCompile
             return lines[pos];
         }
 
-        public static bool GetObject<T>(ref BinaryWriter outStream, string wantedWord, out int returnedObject, string[]? enumType = null, Dictionary<int, string>? dictType = null)
+        public static string GetNextToken()
         {
-            returnedObject = -1;
+            if (!HasNextToken())
+                return "";
+            tokenPos++;
+            return lineTokens[tokenPos];
+        }
 
-            //Remember types get downcast by one so ND long is C int
-            //string[] parts = System.Text.RegularExpressions.Regex.Split(getLine(), @"\s+");
-            string line = GetLine();
-            string keyword = line.Substring(0, line.IndexOf(' '));
-
-            //Should be one number unless rect. 0,0,0,0
-            List<string> operand = new List<string>();
-            operand.Add(line.Substring(line.IndexOf(' ')));
-            operand[0] = operand[0].Trim(' ');
-
-            if (wantedWord != keyword)
-            {
-                //Console.WriteLine($"Invalid type: '{keyword}' on line {pos + 1}. Must be a valid keyword.");
+        public static bool HasNextToken()
+        {
+            if (tokenPos >= lineTokens.Length - 1)
                 return false;
-            }
-
-            if (operand[0].Count(f => f == ',') == 3)
-            {
-                operand = operand[0].Split(',').ToList();
-            }
-
-            int inEnum = -1;
-
-            //TODO: prints same values for 1,2,3,4
-            foreach (string item in operand)
-            {
-                inEnum = ParseObj(wantedWord, item, enumType, dictType);
-                if (inEnum == -1)
-                    return false;
-
-                if (typeof(T) == typeof(byte))
-                    outStream.Write((byte)inEnum);
-                if (typeof(T) == typeof(short))
-                    outStream.Write((short)inEnum);
-                if (typeof(T) == typeof(int))
-                    outStream.Write(inEnum);
-            }
-
-            returnedObject = inEnum;
             return true;
         }
 
-        public static int ParseObj(string wantedWord, string operand, string[]? enumType, Dictionary<int, string>? dictType)
+        public static string GetCurrentToken()
         {
-            //if not a number, either enum or syntax error
-            if (!int.TryParse(operand, out int inEnum))
-            {
-                if (enumType != null)
-                {
-                    inEnum = Array.FindIndex(enumType, x => x.Contains(operand));
-                    if (inEnum == -1)
-                    {
-                        if (enumType == Enums.tf)
-                        {
-                            inEnum = ParseTF(operand);
-                        }
-                        else
-                        {
-                            Console.WriteLine($"'{operand}' on line {pos + 1} is not a number or enum value.");
-                            return -1;
-                        }
-                    }
-                }
-                else if (dictType != null)
-                {
-                    inEnum = dictType.FirstOrDefault(x => x.Value == operand).Key;
-                    if (inEnum == 0)
-                    {
-                        Console.WriteLine($"'{operand}' on line {pos + 1} is not a number or Enum value.");
-                        return -1;
-                    }
-                }
-                else
-                {
-                    //TODO: be more specific using wanted word
-                    Console.WriteLine($"'{operand}' on line {pos + 1}. Must contain either a number/enum value or a rect. i.e. 0,0,0,0");
-                    return -1;
-                }
-            }
-            return inEnum;
+            return lineTokens[tokenPos];
         }
 
-        public static bool GetNextObject<T>(ref BinaryWriter outStream, string wantedWord, out int returnedObject, string[]? enumType = null, Dictionary<int, string>? dictType = null)
+        public static void WriteObject(BinaryWriter outStream, string wantedKeyword, string[]? enumType = null)
         {
             GetNextLine();
-            returnedObject = -1;
-            return GetObject<T>(ref outStream, wantedWord, out returnedObject, enumType, dictType);
-        }
+            string keyword = GetCurrentToken();
+            string value = GetNextToken();
+            //Has to be number unless explicitly string
+            int valueInt = -1;
 
-        public static bool GetObject<T>(ref BinaryWriter outStream, string wantedWord, string[]? enumType = null, Dictionary<int, string>? dictType = null)
-        {
-            return GetObject<T>(ref outStream, wantedWord, out _, enumType, dictType);
-        }
+            //TODO: helper int getEnumValue(string);
+            if (enumType != null)
+                for (int i = 0; i < enumType.Length; i++)
+                {
+                    if (enumType[i] == value)
+                    {
+                        valueInt = i;
+                        break;
+                    }
+                }
 
-        public static bool GetNextObject<T>(ref BinaryWriter outStream, string wantedWord, string[]? enumType = null, Dictionary<int, string>? dictType = null)
-        {
-            return GetNextObject<T>(ref outStream, wantedWord, out _, enumType, dictType);
+            switch (keywordDict[keyword])
+            {
+                case "short":
+                    outStream.Write((short)valueInt);
+                    break;
+
+                case "int":
+                    outStream.Write((int)valueInt);
+                    break;
+                //Should only hit if programmer error. Wanted word not valid.
+                default:
+                    throw new Exception($"\nSyntax error. Unknown keyword. at line '{InFile.pos}'");
+            }
         }
 
         //TODO: convert functions like these to return value instead of ref. Just null check at callsite.
-        public static string? WriteString(ref BinaryWriter outStream, int length)
-        {
-            //Split input keyword and expression
-            string[] parts = Tokenize(GetLine());
-
-            //Reassemble the quoted part of the string. If there are spaces, it will be split
-            for (int i = 2; i < parts.Length; i++)
-            {
-                parts[1] = parts[1] + " " + parts[i];
-            }
-
-            //Validate keyword
-            if (Array.IndexOf(stringKeywords, parts[0]) == -1)
-            {
-                if (parts[0].Contains('[') && parts[0].Contains(']'))
-                {
-                    parts[0] = parts[0].Substring(parts[0].IndexOf('[') + 1);
-                    parts[0] = parts[0].Substring(0, parts[0].LastIndexOf(']'));
-                }
-                else
-                {
-                    Console.WriteLine($"Unknown keyword: '{parts[0]}' on line {pos + 1}. Must be a valid keyword");
-                    return null;
-                }
-            }
-
-            //Validate expression
-            if (parts[1].Length < 1 || parts[1].Length > length)
-            {
-                Console.WriteLine($"Expression too long: '{parts[1]}' on line {pos + 1}. Must be less than {length}");
-                return null;
-            }
-
-            //Make sure quoted unless reserved keyword
-            int numQuotes = parts[1].Count(f => f == '\"');
-            if (numQuotes != 2 && parts[1] != "NO_ART_SCENE")
-            {
-                Console.WriteLine($"Expression must be in double quotes \"x\": '{parts[1]}' on line {pos + 1}");
-                return null;
-            }
-
-            string SceneDesc;
-            if (numQuotes == 2)
-            {
-                //Trim line
-                SceneDesc = parts[1].Substring(parts[1].IndexOf('\"') + 1);
-                SceneDesc = SceneDesc.Substring(0, SceneDesc.LastIndexOf('\"'));
-            }
-            else
-            {
-                SceneDesc = parts[1];
-            }
-
-            SceneDesc = SceneDesc.PadRight(length, '\0');
-            outStream.Write(Encoding.UTF8.GetBytes(SceneDesc));
-
-            return SceneDesc;
-        }
-
-        public static string? WriteNextString(ref BinaryWriter outStream, int length)
+        public static void WriteString(BinaryWriter outStream, string wantedKeyword, int length)
         {
             GetNextLine();
-            return WriteString(ref outStream, length);
+            string keyword = GetCurrentToken();
+            string value = GetNextToken();
+
+            if (keyword != wantedKeyword)
+                throw new Exception($"Invalid keyword. Must be: '{wantedKeyword}'");
+
+            if (value.Length > length)
+                throw new Exception($"String too long at {value.Length} chars. Must be less than: '{length}'");
+
+            value = value.PadRight(length, '\0');
+            outStream.Write(Encoding.UTF8.GetBytes(value));
         }
 
-        public static string[] Tokenize(string input)
+        //Might not need with tokens
+        public static void WriteImmediateString(BinaryWriter outStream, string wantedKeyword, int length)
         {
-            return _regex.Split(input);
+            WriteString(outStream, wantedKeyword, length);
         }
 
         public static int ParseTF(string operand)

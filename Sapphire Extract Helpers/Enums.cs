@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace Sapphire_Extract_Helpers
 {
@@ -28,8 +29,8 @@ namespace Sapphire_Extract_Helpers
         public static string[] z = { "Unknown0", "Unknown1", "Unknown2", "Unknown3", "Unknown4", "Unknown5", "Unknown6",
             "Unknown7", "Unknown8", "Unknown9", "VIEWPORT_OVERLAY1_Z", "VIEWPORT_OVERLAY2_Z" };
 
-        public static string[] cursor = { "Unknown0", "MANIPULATE_EXAM_CURSOR", "Unknown2", "Unknown3", "Unknown4", "Unknown5",
-            "Unknown6", "Unknown7", "Unknown8", "Unknown9", "BACK_CURSOR", "Unknown11", "FORWARD_CURSOR" };
+        /*public static string[] cursor = { "Unknown0", "MANIPULATE_EXAM_CURSOR", "Unknown2", "Unknown3", "Unknown4", "Unknown5",
+            "Unknown6", "Unknown7", "Unknown8", "Unknown9", "BACK_CURSOR", "Unknown11", "FORWARD_CURSOR" };*/
 
         public static string[] timers = { "GAMETIMER_0", "GAMETIMER_1", "GAMETIMER_2", "GAMETIMER_3", "GAMETIMER_4", "GAMETIMER_5",
             "GAMETIMER_6", "GAMETIMER_7", "GAMETIMER_8", "GAMETIMER_9", "GAMETIMER_10", "GAMETIMER_11", "GAMETIMER_12",
@@ -63,7 +64,21 @@ namespace Sapphire_Extract_Helpers
                    {22, "MANIPULATE_EXAM_CURSOR"},
                    {41, "TAKE"}};
 
-        public static string getCursorTemp(int num)
+        //Just make a get next cursor func insted of this junk
+        /*public static string[] cursor = popCursors();
+
+        private static string[] popCursors()
+        {
+            List<string> cursors = new List<string>();
+            for (int i = 0; i < cursorDict.Count; i++)
+            {
+            }
+            return cursors.ToArray();
+        }*/
+
+        //public static Dictionary<string, int> cursorDictReverse = cursorDict.ToDictionary(x => x.Value, x => x.Key);
+
+        /*public static string getCursorTemp(int num)
         {
             if (num == 10)
                 return "BACK_CURSOR";
@@ -77,6 +92,6 @@ namespace Sapphire_Extract_Helpers
                 return "TAKE";
             else
                 return num.ToString();
-        }
+        }*/
     }
 }

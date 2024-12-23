@@ -323,8 +323,7 @@ namespace HIFFDecompile.Chunks
                 //AT_FLAGS_HS
                 if (type == 91)
                 {
-                    //writetext.WriteLine($"long      {Enums.cursor[cursor]}        // Cursor to show when in hotspot");
-                    writetext.WriteLine($"long      {Enums.getCursorTemp(cursor)}        // Cursor to show when in hotspot");
+                    writetext.WriteLine($"long      {Enums.cursorDict[cursor]}        // Cursor to show when in hotspot");
 
                     writetext.WriteLine("BeginCount long");
 
@@ -392,7 +391,7 @@ namespace HIFFDecompile.Chunks
                 if (InStream.debugprint) { Console.WriteLine(pos); }
 
                 writetext.WriteLine($"long      {frame}");
-                writetext.WriteLine($"long      {Enums.getCursorTemp(cursor)}");
+                writetext.WriteLine($"long      {Enums.cursorDict[cursor]}");
             }
             else if (type == 16)
             {

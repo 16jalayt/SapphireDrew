@@ -2,3 +2,5 @@ A suite of tools to extract and recompile the files from the Nancy Drew series o
 currently it can extract the cif tree (scripts and overlays) and partially decompile and recompile scene scripts.
 
 The included htxt.xml can be imported into Notepad++ to provide syntax highlighting.
+
+CTL + ALT + E -> Common Language... -> System.Exceptions   Check this to make easier to debug

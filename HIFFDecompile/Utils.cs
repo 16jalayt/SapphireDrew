@@ -77,7 +77,7 @@ namespace HIFFDecompile
                 else if (depType == "DT_PLAYER_TOD")
                     writetext.WriteLine($"int   {Enums.tod[dep.depRefFlag]}");
                 else if (depType == "DT_CURSOR_TYPE")
-                    writetext.WriteLine($"int   {Enums.getCursorTemp(dep.depRefFlag)}");
+                    writetext.WriteLine($"int   {Enums.cursorDict[dep.depRefFlag]}");
                 else if (depType == "DT_TIMER_LESS_THAN_DEPENDENCY_TIME" || depType == "DT_TIMER_GREATER_THAN_DEPENDENCY_TIME")
                     writetext.WriteLine($"int   {Enums.timers[dep.depRefFlag]}");
                 else
