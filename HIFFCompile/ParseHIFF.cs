@@ -105,6 +105,16 @@ namespace HIFFCompile
                         ShortChunks.OVLChunk(outStream);
                         break;
 
+                    case "hsflags":
+                        //parse short
+                        ShortChunks.FLAGChunk(outStream);
+                        break;
+
+                    case "use":
+                        //parse short
+                        ShortChunks.USEChunk(outStream);
+                        break;
+
                     default:
                         //Unknown line
                         Console.WriteLine($"Unknown line contents: '{InFile.GetLine()}' on line {InFile.pos + 1}");

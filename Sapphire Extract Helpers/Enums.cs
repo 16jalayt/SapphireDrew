@@ -36,7 +36,7 @@ namespace Sapphire_Extract_Helpers
             "GAMETIMER_6", "GAMETIMER_7", "GAMETIMER_8", "GAMETIMER_9", "GAMETIMER_10", "GAMETIMER_11", "GAMETIMER_12",
             "GAMETIMER_13", "GAMETIMER_14", "GAMETIMER_15", "GAMETIMER_16", "GAMETIMER_17", "GAMETIMER_18", "GAMETIMER_19"};
 
-        public static string[] depType = { "Null", "DT_INVENTORY", "DT_EVENT", "DT_LOGIC",
+        public static string[] depType = { "NULL", "DT_INVENTORY", "DT_EVENT", "DT_LOGIC",
             "DT_ELAPSED_GAME_TIME", "DT_ELAPSED_SCENE_TIME", "DT_ELAPSED_PLAYER_TIME", "DT_SAMS_SIGHT", "DT_SAMS_SOUND", "DT_SCENE_COUNT",
             "DT_ELAPSED_PLAYER_DAY", "DT_CURSOR_TYPE", "DT_PLAYER_TOD", "DT_TIMER_LESS_THAN_DEPENDENCY_TIME", "DT_TIMER_GREATER_THAN_DEPENDENCY_TIME",
             "DT_DIFFICULTY_LEVEL", "DT_CLOSED_CAPTIONING", "DT_SOUND", "DT_OPEN_PARENTHESIS", "DT_CLOSE_PARENTHESIS", "DT_RANDOM", "DT_DEFAULT_AR" };
@@ -76,7 +76,8 @@ namespace Sapphire_Extract_Helpers
             return cursors.ToArray();
         }*/
 
-        //public static Dictionary<string, int> cursorDictReverse = cursorDict.ToDictionary(x => x.Value, x => x.Key);
+        public static Dictionary<string, int> cursorDictReverse = cursorDict.ToDictionary(x => x.Value, x => x.Key);
+        public static Dictionary<string, int> ACT_TypeReverse = ACT_Type.ToDictionary(x => x.Value, x => x.Key);
 
         /*public static string getCursorTemp(int num)
         {

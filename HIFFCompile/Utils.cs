@@ -12,7 +12,7 @@ namespace HIFFCompile
         {
             long endChunk = outStream.BaseStream.Position;
             outStream.Seek((int)placeholder, SeekOrigin.Begin);
-            int test = (int)(endChunk - placeholder - 4);
+            //int test = (int)(endChunk - placeholder - 4);
             int length = BinaryPrimitives.ReverseEndianness((int)(endChunk - placeholder - 4));
             outStream.Write(length);
             outStream.Seek((int)endChunk, SeekOrigin.Begin);
@@ -206,6 +206,14 @@ namespace HIFFCompile
                 return;
 
             throw new Exception($"Chunk needs a \'}}\' character to close the closure. On line '{InFile.pos}' found instead: '{InFile.GetLine()}'");
+        }
+
+        public static void WriteShortAtPos(BinaryWriter outStream, short data, long location)
+        {
+            long endDeps = outStream.BaseStream.Position;
+            outStream.Seek((int)location, SeekOrigin.Begin);
+            outStream.Write((short)data);
+            outStream.Seek((int)endDeps, SeekOrigin.Begin);
         }
     }
 }

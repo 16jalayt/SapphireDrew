@@ -9,6 +9,20 @@ namespace HIFFCompile
     {
         public static void ACTChunk(BinaryWriter outStream)
         {
+            outStream.Write(Encoding.UTF8.GetBytes("ACT\0"));
+            long actPlace = outStream.BaseStream.Position;
+            outStream.Write((int)-1);
+
+            outStream.Write(Encoding.UTF8.GetBytes("Scene Change with Hotspot".PadRight(48, '\0')));
+            InFile.WriteString(outStream, "char[48]", 48);
+
+            InFile.WriteObject(outStream, "byte", Enums.ACT_Type);
+
+            //Exec type
+            InFile.WriteObject(outStream, "byte");
+
+            //RefScene
+            InFile.WriteObject(outStream, "int");
         }
 
         public static void TSUMChunk(BinaryWriter outStream)
@@ -38,6 +52,32 @@ namespace HIFFCompile
 
         public static void USEChunk(BinaryWriter outStream)
         {
+            outStream.Write(Encoding.UTF8.GetBytes("USE\0"));
+            long usePlace = outStream.BaseStream.Position;
+            outStream.Write((int)-1);
+
+            //numDeps placeholder
+            long numDepsPlace = outStream.BaseStream.Position;
+            outStream.Write((short)-1);
+
+            if (InFile.GetNextLine() != "BeginCount RefHif")
+            {
+                throw new Exception($"Unknown use contents: '{InFile.GetLine()}'. Should be: 'BeginCount RefHif'");
+            }
+
+            //TODO: EOF guard?
+            //TODO: Use peek next to fix immediate issue?
+            short numDeps = 0;
+            while (InFile.GetNextLine() != "EndCount RefHif")
+            {
+                //Must be immediate string becausse we already advanced the line pointer with the loop
+                InFile.WriteImmediateString(outStream, "RefHif", 33);
+                numDeps++;
+            }
+
+            Utils.WriteShortAtPos(outStream, numDeps, numDepsPlace);
+
+            Utils.WriteLength(outStream, usePlace);
         }
     }
 }

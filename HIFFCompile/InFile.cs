@@ -22,7 +22,9 @@ namespace HIFFCompile
         {
             { "int", "short" },
             { "long", "int" },
-            { "RefFlag", "int" }
+            { "RefFlag", "int" },
+            { "RefSetFlag", "short" },
+            { "RefScene", "int" },
         };
 
         //Insert placeholder at zero so line numbers match
@@ -38,10 +40,12 @@ namespace HIFFCompile
         {
             pos++;
 
+            //TODO: out of spec block comments
             //ignore comments
             if (lines[pos].Contains("//"))
             {
                 lines[pos] = lines[pos].Substring(0, lines[pos].IndexOf("//"));
+                lines[pos] = lines[pos].TrimEnd();
                 //If line has only comment, get next available line
                 if (lines[pos]?.Length == 0)
                     GetNextLine();
@@ -97,6 +101,7 @@ namespace HIFFCompile
 
             //TODO: helper int getEnumValue(string);
             if (enumType != null)
+            {
                 for (int i = 0; i < enumType.Length; i++)
                 {
                     if (enumType[i] == value)
@@ -105,8 +110,57 @@ namespace HIFFCompile
                         break;
                     }
                 }
+            }
+            else
+            {
+                if (!int.TryParse(value, out valueInt))
+                {
+                    throw new Exception($"Value not a number: '{value}'");
+                }
+            }
 
             switch (keywordDict[keyword])
+            {
+                case "short":
+                    outStream.Write((short)valueInt);
+                    break;
+
+                case "int":
+                    outStream.Write((int)valueInt);
+                    break;
+                //Should only hit if programmer error. Wanted word not valid.
+                default:
+                    throw new Exception($"\nSyntax error. Unknown keyword. at line '{InFile.pos}'");
+            }
+        }
+
+        public static void WriteTokenObject(BinaryWriter outStream, string valueType, string[]? enumType = null)
+        {
+            string value = GetNextToken();
+            //Has to be number unless explicitly string
+            int valueInt = -1;
+
+            //TODO: helper int getEnumValue(string);
+            if (enumType != null)
+            {
+                for (int i = 0; i < enumType.Length; i++)
+                {
+                    if (enumType[i] == value)
+                    {
+                        valueInt = i;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                if (!int.TryParse(value, out valueInt))
+                {
+                    throw new Exception($"Value not a number: '{value}'");
+                }
+            }
+
+            switch (keywordDict[valueType])
             {
                 case "short":
                     outStream.Write((short)valueInt);
@@ -125,6 +179,11 @@ namespace HIFFCompile
         public static void WriteString(BinaryWriter outStream, string wantedKeyword, int length)
         {
             GetNextLine();
+            WriteImmediateString(outStream, wantedKeyword, length);
+        }
+
+        public static void WriteImmediateString(BinaryWriter outStream, string wantedKeyword, int length)
+        {
             string keyword = GetCurrentToken();
             string value = GetNextToken();
 
@@ -136,12 +195,6 @@ namespace HIFFCompile
 
             value = value.PadRight(length, '\0');
             outStream.Write(Encoding.UTF8.GetBytes(value));
-        }
-
-        //Might not need with tokens
-        public static void WriteImmediateString(BinaryWriter outStream, string wantedKeyword, int length)
-        {
-            WriteString(outStream, wantedKeyword, length);
         }
 
         public static int ParseTF(string operand)

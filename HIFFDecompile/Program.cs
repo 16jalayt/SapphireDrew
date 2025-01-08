@@ -385,10 +385,10 @@ namespace HIFFDecompile
             else
             {
                 writetext.WriteLine("CHUNK USE {");
-                writetext.WriteLine("  BeginCount RefHif");
+                writetext.WriteLine("  BeginCount RefHif     // Hif file to include (without the \".hif\")");
                 for (int i = 0; i < NumRefs; i++)
                 {
-                    writetext.WriteLine($"    RefHif    \"{refs[i]}\"     // Hif file to include (without the \".hif\")");
+                    writetext.WriteLine($"    RefHif    \"{refs[i]}\"");
                 }
 
                 writetext.WriteLine("  EndCount RefHif");
