@@ -91,6 +91,7 @@ namespace HIFFCompile
             return lineTokens[tokenPos];
         }
 
+        //TODO: wantedKeyword not used
         public static void WriteObject(BinaryWriter outStream, string wantedKeyword, string[]? enumType = null)
         {
             GetNextLine();
@@ -110,6 +111,41 @@ namespace HIFFCompile
                         break;
                     }
                 }
+            }
+            else
+            {
+                if (!int.TryParse(value, out valueInt))
+                {
+                    throw new Exception($"Value not a number: '{value}'");
+                }
+            }
+
+            switch (keywordDict[keyword])
+            {
+                case "short":
+                    outStream.Write((short)valueInt);
+                    break;
+
+                case "int":
+                    outStream.Write((int)valueInt);
+                    break;
+                //Should only hit if programmer error. Wanted word not valid.
+                default:
+                    throw new Exception($"\nSyntax error. Unknown keyword. at line '{InFile.pos}'");
+            }
+        }
+
+        public static void WriteObject(BinaryWriter outStream, string wantedKeyword, Dictionary<string, int> enumType)
+        {
+            GetNextLine();
+            string keyword = GetCurrentToken();
+            string value = GetNextToken();
+            //Has to be number unless explicitly string
+            int valueInt = -1;
+
+            if (enumType != null)
+            {
+                valueInt = enumType[value];
             }
             else
             {

@@ -361,5 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+
 /launch4j/launch4j-3.14-win32
 /HISExtract/Properties/launchSettings.json
+/SapphireDrew Dev Build

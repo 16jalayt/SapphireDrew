@@ -16,7 +16,7 @@ namespace HIFFCompile
             outStream.Write(Encoding.UTF8.GetBytes("Scene Change with Hotspot".PadRight(48, '\0')));
             InFile.WriteString(outStream, "char[48]", 48);
 
-            InFile.WriteObject(outStream, "byte", Enums.ACT_Type);
+            InFile.WriteObject(outStream, "byte", Enums.ACT_TypeReverse);
 
             //Exec type
             InFile.WriteObject(outStream, "byte");
