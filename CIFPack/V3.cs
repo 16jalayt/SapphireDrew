@@ -192,12 +192,11 @@ namespace CIFPack
 
                 if (gamenum == 18)
                 {
-                    //todo:ven
                     Console.WriteLine("VEN only accepts .hiff files not .lua.");
                     return null;
                 }
 
-                string luaName = InStream.FilePath;
+                string luaName = $"{InStream.FilePath}";
                 string luacName = $"{InStream.FilePath}c";
 
                 ProcessStartInfo startInfo = new ProcessStartInfo();
@@ -207,7 +206,7 @@ namespace CIFPack
                 startInfo.FileName = "luac5.1.exe";
                 startInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 //put quotes around path in argument
-                startInfo.Arguments = $"-o  {luacName} {luaName}";
+                startInfo.Arguments = $"-o  \"{luacName}\" \"{luaName}\"";
 
                 try
                 {
@@ -216,7 +215,7 @@ namespace CIFPack
                     using Process? process = Process.Start(startInfo);
                     if (process == null)
                     {
-                        Console.WriteLine("Unable to start unluac process.");
+                        Console.WriteLine("Unable to start luac process.");
                         return null;
                     }
                     process.Start();
@@ -248,7 +247,7 @@ namespace CIFPack
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Failed to launch unluac:\n" + e);
+                    Console.WriteLine("Failed to launch luac:\n" + e);
                     return null;
                 }
             }

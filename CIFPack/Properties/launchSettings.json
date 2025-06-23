@@ -2,7 +2,7 @@
   "profiles": {
     "CIFPack": {
       "commandName": "Project",
-      "commandLineArgs": "testpack 22"
+      "commandLineArgs": "\"CELLPHONE SC.lua\" 22"
     }
   }
 }

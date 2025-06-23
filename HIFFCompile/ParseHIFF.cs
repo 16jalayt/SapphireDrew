@@ -58,7 +58,7 @@ namespace HIFFCompile
                 Console.WriteLine($"\nSyntax error in: '{inFile}' at line '{InFile.pos}'\n");
                 Console.WriteLine(e);
             }
-            outStream.BaseStream.Close();
+            //outStream.BaseStream.Close();
             //TODO: find way to delete on fail
         }
 

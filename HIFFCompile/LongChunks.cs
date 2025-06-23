@@ -19,10 +19,28 @@ namespace HIFFCompile
             InFile.WriteObject(outStream, "byte", Enums.ACT_TypeReverse);
 
             //Exec type
-            InFile.WriteObject(outStream, "byte");
+            InFile.WriteObject(outStream, "byte", Enums.execType);
 
+            Utils.ParseDeps(outStream);
+
+            //TODO: split out below to chunk type
             //RefScene
             InFile.WriteObject(outStream, "int");
+
+            //TODO: split
+            //Frame to change to
+            InFile.WriteObject(outStream, "long");
+
+            //Hover cursor
+            InFile.WriteObject(outStream, "long", Enums.cursorDictReverse);
+
+            //Hotspot rect
+            //TODO: find better way?
+            InFile.GetNextLine();
+            InFile.WriteTokenObject(outStream, "long");
+            InFile.WriteTokenObject(outStream, "long");
+            InFile.WriteTokenObject(outStream, "long");
+            InFile.WriteTokenObject(outStream, "long");
         }
 
         public static void TSUMChunk(BinaryWriter outStream)

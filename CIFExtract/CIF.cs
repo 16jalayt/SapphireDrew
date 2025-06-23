@@ -508,10 +508,18 @@ namespace CIFExtract
                 return ".xs1";
             else if (cif.FileType == 4)
             {
-                if (cif.fileName == ".")
-                    return "";
+                //Not sure why some OVLs in Labrynth are 4
+                if (verMajor == 3)
+                {
+                    return ".png";
+                }
                 else
-                    return ".unk";
+                {
+                    if (cif.fileName == ".")
+                        return "";
+                    else
+                        return ".unk";
+                }
             }
             else
             {
@@ -545,10 +553,16 @@ namespace CIFExtract
                 nameLength = 33;
             else if (verMajor == 3)
             {
+                //Edge case for PUI_Nancy.dat a 1 file tree.
+                if ((InStream.Position() + 69) > InStream.Length())
+                {
+                    nameLength = 33;
+                    return;
+                }
                 //Check for venice. Seek to end of normal name to see if 0, if not then longer name.
                 //The most notable change between cif revisions is name field length. The other being graphics format.
-                InStream.Skip(69);//nice
-                                  //val should either ber first char of next name or last char of next name (venice. last char should be blank).
+                InStream.Skip(68);
+                //val should either ber first char of next name or last char of next name (venice. last char should be blank).
                 byte test = InStream.ReadByte();
                 if (test == 0)
                     nameLength = 33;

@@ -19,7 +19,7 @@ namespace HIFFCompile
             return length;
         }
 
-        /*public static int ParseDeps(ref BinaryWriter outStream)
+        public static int ParseDeps(BinaryWriter outStream)
         {
             int posPlaceholder = InFile.pos;
             long depsPleceholder = outStream.BaseStream.Position;
@@ -33,24 +33,23 @@ namespace HIFFCompile
             {
                 numDeps++;
                 //Console.WriteLine($"Dep start {pos + 1}.");
-                //TODO: double check length
-                if (!InFile.GetNextObject<short>(ref outStream, enumType: Enums.depType))
-                    return -1;
+                InFile.WriteObject(outStream, "RefDep", Enums.depType);
                 //TODO: ??? game specific. Need table or something.
                 ////Then again, decompiled would be number anyway
-                if (!InFile.GetNextObject<short>(ref outStream, enumType: Enums.execType))
-                    return -1;
+                //InFile.WriteObject(outStream, "RefFlag", Enums.);
 
                 //condition FALSE=0 TRUE=1
-                if (!InFile.GetNextObject<short>(ref outStream, enumType: Enums.tf))
-                    return -1;
+                InFile.WriteObject(outStream, "int", Enums.tf);
                 //0=AND 1=OR
-                if (!InFile.GetNextObject<short>(ref outStream, enumType: Enums.depFlag))
-                    return -1;
+                InFile.WriteObject(outStream, "int", Enums.depFlag);
 
                 //Rect called "time". Not sure purpose
-                if (!InFile.GetNextObject<short>(ref outStream))
-                    return -1;
+                //TODO: find better way?
+                InFile.GetNextLine();
+                InFile.WriteTokenObject(outStream, "int");
+                InFile.WriteTokenObject(outStream, "int");
+                InFile.WriteTokenObject(outStream, "int");
+                InFile.WriteTokenObject(outStream, "int");
             }
             else
                 InFile.pos--;
@@ -69,7 +68,7 @@ namespace HIFFCompile
             outStream.Write(Encoding.UTF8.GetBytes(endOfDeps));
 
             return posEndDeps;
-        }*/
+        }
 
         /*public static int ParseDeps(ref BinaryWriter outStream, int actType)
         {

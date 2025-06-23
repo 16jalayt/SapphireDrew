@@ -20,6 +20,7 @@ namespace HIFFCompile
         //left keyword, right type
         private static Dictionary<string, string> keywordDict = new Dictionary<string, string>()
         {
+            { "byte", "byte" },
             { "int", "short" },
             { "long", "int" },
             { "RefFlag", "int" },
@@ -40,6 +41,9 @@ namespace HIFFCompile
         {
             pos++;
 
+            if (pos >= lines.Length)
+                return "";
+
             //TODO: out of spec block comments
             //ignore comments
             if (lines[pos].Contains("//"))
@@ -55,11 +59,15 @@ namespace HIFFCompile
             //lines[pos] = Regex.Replace(lines[pos], _regex.ToString(), " ");
 
             //Tokenize respecting quotes
-            string pattern = "[^\\s\"']+|\"([^\"]*)\"|'([^']*)'";
+            string pattern = "[^\\s\"',]+|\"([^\"]*)\"|'([^']*)'";
             lineTokens = Regex.Matches(lines[pos], pattern)
                 .OfType<Match>()
                 .Select(m => m.Groups[0].Value.Replace("\"", ""))
                 .ToArray();
+
+            //Wont work with quotes or comments
+            //char[] delimiters = new[] { ',', ' ' };
+            //lineTokens = lines[pos].Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
 
             tokenPos = 0;
 
@@ -122,6 +130,10 @@ namespace HIFFCompile
 
             switch (keywordDict[keyword])
             {
+                case "byte":
+                    outStream.Write((byte)valueInt);
+                    break;
+
                 case "short":
                     outStream.Write((short)valueInt);
                     break;
@@ -154,9 +166,13 @@ namespace HIFFCompile
                     throw new Exception($"Value not a number: '{value}'");
                 }
             }
-
+            //Can throw System.Collections.Generic.KeyNotFoundException: 'The given key 'byte' was not present in the dictionary.'
             switch (keywordDict[keyword])
             {
+                case "byte":
+                    outStream.Write((byte)valueInt);
+                    break;
+
                 case "short":
                     outStream.Write((short)valueInt);
                     break;
