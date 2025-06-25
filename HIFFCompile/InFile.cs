@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HIFFCompile
 {
@@ -23,9 +24,11 @@ namespace HIFFCompile
             { "byte", "byte" },
             { "int", "short" },
             { "long", "int" },
-            { "RefFlag", "int" },
+            { "RefFlag", "short" },
             { "RefSetFlag", "short" },
-            { "RefScene", "int" },
+            { "RefScene", "short" },
+            { "RefDep", "short" },
+            { "RefSound", "short" },
         };
 
         //Insert placeholder at zero so line numbers match
@@ -71,7 +74,22 @@ namespace HIFFCompile
 
             tokenPos = 0;
 
+            //Remove multiple spaces
+            lines[pos] = Regex.Replace(lines[pos], @"\s+", " ");
+            //Alt replace whitespace with same character respecting tabs... etc
+            //Regex.Replace(source, @"(\s)\s+", "$1");
+
             return lines[pos];
+        }
+
+        public static string PeekNextLine()
+        {
+            if (pos >= lines.Length)
+                return "";
+
+            //Remove multiple spaces
+            lines[pos + 1] = Regex.Replace(lines[pos + 1], @"\s+", " ");
+            return lines[pos + 1];
         }
 
         public static string GetLine()
@@ -89,7 +107,7 @@ namespace HIFFCompile
 
         public static bool HasNextToken()
         {
-            if (tokenPos >= lineTokens.Length - 1)
+            if (tokenPos >= (lineTokens.Length - 1))
                 return false;
             return true;
         }
@@ -105,6 +123,9 @@ namespace HIFFCompile
             GetNextLine();
             string keyword = GetCurrentToken();
             string value = GetNextToken();
+
+            if (keyword != wantedKeyword)
+                throw new Exception($"Invalid keyword. Must be: '{wantedKeyword}'");
             //Has to be number unless explicitly string
             int valueInt = -1;
 
@@ -152,6 +173,9 @@ namespace HIFFCompile
             GetNextLine();
             string keyword = GetCurrentToken();
             string value = GetNextToken();
+
+            if (keyword != wantedKeyword)
+                throw new Exception($"Invalid keyword. Must be: '{wantedKeyword}'");
             //Has to be number unless explicitly string
             int valueInt = -1;
 

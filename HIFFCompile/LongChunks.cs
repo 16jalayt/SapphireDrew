@@ -13,34 +13,19 @@ namespace HIFFCompile
             long actPlace = outStream.BaseStream.Position;
             outStream.Write((int)-1);
 
-            outStream.Write(Encoding.UTF8.GetBytes("Scene Change with Hotspot".PadRight(48, '\0')));
+            //outStream.Write(Encoding.UTF8.GetBytes("Scene Change with Hotspot".PadRight(48, '\0')));
             InFile.WriteString(outStream, "char[48]", 48);
 
             InFile.WriteObject(outStream, "byte", Enums.ACT_TypeReverse);
+            string actType = InFile.lineTokens[1];
 
             //Exec type
             InFile.WriteObject(outStream, "byte", Enums.execType);
 
             Utils.ParseDeps(outStream);
 
-            //TODO: split out below to chunk type
-            //RefScene
-            InFile.WriteObject(outStream, "int");
-
-            //TODO: split
-            //Frame to change to
-            InFile.WriteObject(outStream, "long");
-
-            //Hover cursor
-            InFile.WriteObject(outStream, "long", Enums.cursorDictReverse);
-
-            //Hotspot rect
-            //TODO: find better way?
-            InFile.GetNextLine();
-            InFile.WriteTokenObject(outStream, "long");
-            InFile.WriteTokenObject(outStream, "long");
-            InFile.WriteTokenObject(outStream, "long");
-            InFile.WriteTokenObject(outStream, "long");
+            ActChunks.ACTSorter(outStream, actType);
+            Utils.WriteLength(outStream, actPlace);
         }
 
         public static void TSUMChunk(BinaryWriter outStream)

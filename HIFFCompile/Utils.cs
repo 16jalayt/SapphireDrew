@@ -26,17 +26,19 @@ namespace HIFFCompile
             outStream.Write((int)-1);
 
             int numDeps = 0;
+            //Need raw line reads because will be removed as comment
             while (InFile.lines[InFile.pos] != "// ------------ Dependency -------------" && InFile.lines[InFile.pos] != "}" && InFile.pos < InFile.lines.Length - 1)
             { InFile.pos++; }
 
             if (InFile.lines[InFile.pos] == "// ------------ Dependency -------------")
             {
                 numDeps++;
-                //Console.WriteLine($"Dep start {pos + 1}.");
+                //Console.WriteLine($"Dep start {InFile.pos + 1}.");
                 InFile.WriteObject(outStream, "RefDep", Enums.depType);
                 //TODO: ??? game specific. Need table or something.
                 ////Then again, decompiled would be number anyway
                 //InFile.WriteObject(outStream, "RefFlag", Enums.);
+                InFile.WriteObject(outStream, "RefFlag");
 
                 //condition FALSE=0 TRUE=1
                 InFile.WriteObject(outStream, "int", Enums.tf);
@@ -204,15 +206,32 @@ namespace HIFFCompile
             if (InFile.GetNextToken() == "}" || InFile.GetNextLine() == "}")
                 return;
 
+            if (InFile.GetCurrentToken() == "RefDep")
+            {
+                while (InFile.GetLine() != "}" && InFile.pos < InFile.lines.Length - 1)
+                { InFile.GetNextLine(); }
+                if (InFile.GetLine() == "}")
+                    return;
+            }
+
             throw new Exception($"Chunk needs a \'}}\' character to close the closure. On line '{InFile.pos}' found instead: '{InFile.GetLine()}'");
         }
 
-        public static void WriteShortAtPos(BinaryWriter outStream, short data, long location)
+        public static void WriteIntAtPos(BinaryWriter outStream, int data, long location)
         {
-            long endDeps = outStream.BaseStream.Position;
+            long placeholder = outStream.BaseStream.Position;
             outStream.Seek((int)location, SeekOrigin.Begin);
             outStream.Write((short)data);
-            outStream.Seek((int)endDeps, SeekOrigin.Begin);
+            outStream.Seek((int)placeholder, SeekOrigin.Begin);
+        }
+
+        //For chunk length use Utils.WriteLength instead
+        public static void WriteShortAtPos(BinaryWriter outStream, short data, long location)
+        {
+            long placeholder = outStream.BaseStream.Position;
+            outStream.Seek((int)location, SeekOrigin.Begin);
+            outStream.Write((short)data);
+            outStream.Seek((int)placeholder, SeekOrigin.Begin);
         }
     }
 }
