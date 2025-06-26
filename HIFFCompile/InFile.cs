@@ -148,7 +148,7 @@ namespace HIFFCompile
                     throw new Exception($"Value not a number: '{value}'");
                 }
             }
-
+            //TODO: duplication
             switch (keywordDict[keyword])
             {
                 case "byte":
@@ -227,6 +227,40 @@ namespace HIFFCompile
                         break;
                     }
                 }
+            }
+            else
+            {
+                if (!int.TryParse(value, out valueInt))
+                {
+                    throw new Exception($"Value not a number: '{value}'");
+                }
+            }
+
+            switch (keywordDict[valueType])
+            {
+                case "short":
+                    outStream.Write((short)valueInt);
+                    break;
+
+                case "int":
+                    outStream.Write((int)valueInt);
+                    break;
+                //Should only hit if programmer error. Wanted word not valid.
+                default:
+                    throw new Exception($"\nSyntax error. Unknown keyword. at line '{InFile.pos}'");
+            }
+        }
+
+        public static void WriteTokenObject(BinaryWriter outStream, string valueType, Dictionary<string, int>? enumType)
+        {
+            string value = GetNextToken();
+            //Has to be number unless explicitly string
+            int valueInt = -1;
+
+            //TODO: helper int getEnumValue(string);
+            if (enumType != null)
+            {
+                valueInt = enumType[value];
             }
             else
             {

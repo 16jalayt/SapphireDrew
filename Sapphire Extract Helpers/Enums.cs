@@ -40,8 +40,6 @@ namespace Sapphire_Extract_Helpers
             "DT_ELAPSED_PLAYER_DAY", "DT_CURSOR_TYPE", "DT_PLAYER_TOD", "DT_TIMER_LESS_THAN_DEPENDENCY_TIME", "DT_TIMER_GREATER_THAN_DEPENDENCY_TIME",
             "DT_DIFFICULTY_LEVEL", "DT_CLOSED_CAPTIONING", "DT_SOUND", "DT_OPEN_PARENTHESIS", "DT_CLOSE_PARENTHESIS", "DT_RANDOM", "DT_DEFAULT_AR" };
 
-        //TODO:Table index 0-40
-
         public static Dictionary<int, string> ACT_Type =
               new Dictionary<int, string>(){
                   {16, "AT_SCENE_FRAME"},
@@ -65,5 +63,10 @@ namespace Sapphire_Extract_Helpers
 
         public static Dictionary<string, int> cursorDictReverse = cursorDict.ToDictionary(x => x.Value, x => x.Key);
         public static Dictionary<string, int> ACT_TypeReverse = ACT_Type.ToDictionary(x => x.Value, x => x.Key);
+
+        public static Dictionary<int, string> flags = new Dictionary<int, string>();
+        public static Dictionary<int, string> inv = new Dictionary<int, string>();
+        public static Dictionary<string, int> flagsReverse = new Dictionary<string, int>();
+        public static Dictionary<string, int> invReverse = new Dictionary<string, int>();
     }
 }

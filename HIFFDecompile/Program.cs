@@ -96,8 +96,9 @@ namespace HIFFDecompile
             if (Verbose)
                 InStream.debugprint = true;
 
+            //TODO: check if exists in subdirectory
             if (FlagsFileName != null)
-                Utils.PopulateFlags(FlagsFileName, Verbose);
+                Helpers.PopulateFlags(FlagsFileName, Verbose);
 
             Console.WriteLine($"Printout of: '{InStream.FilePath}'\n");
 
@@ -159,9 +160,9 @@ namespace HIFFDecompile
                                 //writetext.WriteLine($"char[33]    \"{name}\"");
                                 //writetext.WriteLine($"int         {num}");
                                 if (num < 100)
-                                    writetext.WriteLine($"RefINV    \"{name}\"");
+                                    writetext.WriteLine($"RefINV    \"{name}\" //{num}");
                                 else
-                                    writetext.WriteLine($"RefFlag    \"{name}\"");
+                                    writetext.WriteLine($"RefFlag    \"{name}\" //{num}");
                             }
 
                             writetext.WriteLine("}\n");

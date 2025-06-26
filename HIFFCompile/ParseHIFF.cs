@@ -120,6 +120,9 @@ namespace HIFFCompile
                         Console.WriteLine($"Unknown line contents: '{InFile.GetLine()}' on line {InFile.pos + 1}");
                         return;
                 }
+                //Padding
+                if (outStream.BaseStream.Position % 2 != 0)
+                    outStream.Write((byte)0);
             }
         }
     }

@@ -14,27 +14,32 @@ namespace HIFFDecompile.Chunks
             if (InStream.debugprint) { Console.WriteLine($"---ACT {InStream.Position()}---"); }
 
             int ChunkLength = InStream.ReadIntBE("Chunk Length: ");
-            //string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
-            InStream.Skip(48);
-            byte type = InStream.ReadByte("Act type: ");
-            InStream.Skip(-49);
+
+            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
+            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
+
+            byte type = InStream.ReadByte("Type: ");
+            //Once or multiple
+            byte trigger = InStream.ReadByte("Trigger: ");
+
+            Dependency[] deps = Utils.ParseDeps(InStream);
 
             switch (type)
             {
                 //AT_OVERLAY
                 case 52:
-                    SOVL(InStream, writetext);
+                    SOVL(InStream, writetext, ActDesc, type, trigger, deps);
                     break;
                 //AT_FLAGS or AT_FLAGS_HS
                 case 90:
                 case 91:
-                    Flags(InStream, writetext);
+                    Flags(InStream, writetext, ActDesc, type, trigger, deps);
                     break;
                 //AT_SCENE_FRAME_HS = 19, AT_SCENE_FRAME = 16, normal change = 15
                 case 19:
                 case 16:
                 case 15:
-                    SC(InStream, writetext);
+                    SC(InStream, writetext, ActDesc, type, trigger, deps);
                     break;
 
                 case 29:
@@ -46,7 +51,7 @@ namespace HIFFDecompile.Chunks
                     break;*/
                 //AT_START_SOUND
                 case 145:
-                    Sound(InStream, writetext);
+                    Sound(InStream, writetext, ActDesc, type, trigger, deps);
                     break;
 
                 //AT_SET_VOLUME
@@ -85,30 +90,9 @@ namespace HIFFDecompile.Chunks
             if (InStream.debugprint) { Console.WriteLine("---END ACT---\n"); }
         }
 
-        private static void SOVL(BetterBinaryReader InStream, StreamWriter writetext)
+        private static void SOVL(BetterBinaryReader InStream, StreamWriter writetext, string ActDesc, byte type, byte trigger, Dependency[] deps)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---SOVL---"); }
-
-            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
-            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
-
-            //AT_OVERLAY = 52
-            byte type = InStream.ReadByte("Type: ");
-            //Once or multiple
-            byte trigger = InStream.ReadByte("Trigger: ");
-
-            //validation for reasearch //now known from header
-            /*if (type != 52)
-                Console.WriteLine($"Unknownvariant: The file: '{InStream.FileName}' has an unknown variant. " +
-                    $"Please report the following to the developer. \rtype at '{InStream.Position()}' in '{InStream.FileName}' val of '{type}'\n");
-            if (trigger != 1)
-                Console.WriteLine($"Unknownvariant: The file: '{InStream.FileName}' has an unknown variant. " +
-                    $"Please report the following to the developer. \rtrigger at '{InStream.Position()}' in '{InStream.FileName}' val of '{trigger}'\n");
-            */
-
-            //Not entirely sure what the bit widths are supposed to be
-
-            Dependency[] Deps = Utils.ParseDeps(InStream);
 
             //Typeof: RefOvlStat
             string name = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
@@ -117,7 +101,6 @@ namespace HIFFDecompile.Chunks
             //Z order
             short ZOrder = InStream.ReadShort("ZOrder: ");
 
-            //TODO: have to loop here
             short numOVLs = InStream.ReadShort("numOVLs: ");
             if (numOVLs <= 0)
             {
@@ -170,10 +153,10 @@ namespace HIFFDecompile.Chunks
             //TODO: check deps too
             {
                 writetext.Write($"ovl {name} {OVLs[0].Item3.p1x} {OVLs[0].Item3.p1y} {OVLs[0].Item2.p2x + 2} {OVLs[0].Item2.p2y + 2}");
-                foreach (Dependency dep in Deps)
+                foreach (Dependency dep in deps)
                 {
                     //TODO: lookup refFlag in name table
-                    writetext.Write($" if {Utils.GetFlagName(dep.depRefFlag)} {Enums.tf[dep.depState]}");
+                    writetext.Write($" if {Helpers.GetFlagName(dep.depRefFlag)} {Enums.tf[dep.depState]}");
                 }
                 writetext.Write("\n");
             }
@@ -202,36 +185,15 @@ namespace HIFFDecompile.Chunks
 
                 writetext.WriteLine("EndCount int");
 
-                Utils.PrintDeps(Deps, writetext);
+                Utils.PrintDeps(deps, writetext);
 
                 writetext.WriteLine("}\n");
             }
         }
 
-        private static void Flags(BetterBinaryReader InStream, StreamWriter writetext)
+        private static void Flags(BetterBinaryReader InStream, StreamWriter writetext, string ActDesc, byte type, byte trigger, Dependency[] deps)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---HS---"); }
-
-            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
-            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
-
-            //AT_FLAGS = 90, AT_FLAGS_HS = 91
-            byte type = InStream.ReadByte("Type: ");
-            //Once or multiple
-            byte trigger = InStream.ReadByte("Trigger: ");
-
-            //validation for reasearch //now known from header
-            /*if (type != 52)
-                Console.WriteLine($"Unknownvariant: The file: '{InStream.FileName}' has an unknown variant. " +
-                    $"Please report the following to the developer. \rtype at '{InStream.Position()}' in '{InStream.FileName}' val of '{type}'\n");
-            if (trigger != 1)
-                Console.WriteLine($"Unknownvariant: The file: '{InStream.FileName}' has an unknown variant. " +
-                    $"Please report the following to the developer. \rtrigger at '{InStream.Position()}' in '{InStream.FileName}' val of '{trigger}'\n");
-            */
-
-            //Not entirely sure what the bit widths are supposed to be
-
-            Dependency[] Deps = Utils.ParseDeps(InStream);
 
             //Number of variables to set by Hotzone
             short numVars = InStream.ReadShort("Num vars: ");
@@ -243,7 +205,7 @@ namespace HIFFDecompile.Chunks
             {
                 short varid = InStream.ReadShort("");
                 if (InStream.debugprint)
-                    Console.WriteLine("Var ID: " + Utils.GetFlagName(varid));
+                    Console.WriteLine("Var ID: " + Helpers.GetFlagName(varid));
                 short state = InStream.ReadShort("State: ");
                 //TODO: find one with multiple OVLs. Not sure if this is where ends
                 RefSetFlags.Add(Tuple.Create(varid, state));
@@ -314,7 +276,7 @@ namespace HIFFDecompile.Chunks
 
                 foreach (var RefSetFlag in RefSetFlags)
                 {
-                    writetext.WriteLine($"  RefSetFlag    {Utils.GetFlagName(RefSetFlag.Item1)}           // Flag to set");
+                    writetext.WriteLine($"  RefSetFlag    {Helpers.GetFlagName(RefSetFlag.Item1)}           // Flag to set");
                     writetext.WriteLine($"  int       {Enums.tf[RefSetFlag.Item2]}            // Set flag TRUE or FALSE");
                 }
 
@@ -336,22 +298,15 @@ namespace HIFFDecompile.Chunks
                     writetext.WriteLine("EndCount long");
                 }
 
-                Utils.PrintDeps(Deps, writetext);
+                Utils.PrintDeps(deps, writetext);
 
                 writetext.WriteLine("}\n");
             }
         }
 
         //Conditionally change scene.
-        private static void SC(BetterBinaryReader InStream, StreamWriter writetext)
+        private static void SC(BetterBinaryReader InStream, StreamWriter writetext, string ActDesc, byte type, byte trigger, Dependency[] deps)
         {
-            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
-            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
-
-            //Type of HS
-            //AT_SCENE_FRAME_HS = 19, AT_SCENE_FRAME = 16, noral change = 15
-            byte type = InStream.ReadByte("type: ");
-
             if (type == 19)
             {
                 if (InStream.debugprint) { Console.WriteLine($"---Scene Change with hot {InStream.Position()}---"); }
@@ -364,12 +319,6 @@ namespace HIFFDecompile.Chunks
             {
                 if (InStream.debugprint) { Console.WriteLine($"---Scene Change with frame {InStream.Position()}---"); }
             }
-
-            //AE_SINGLE_EXEC = 1
-            //AE_MULTI_EXEC	= 2
-            byte trigger = InStream.ReadByte("Trigger: ");
-
-            Dependency[] Deps = Utils.ParseDeps(InStream);
 
             writetext.WriteLine("CHUNK ACT {");
             writetext.WriteLine($"char[48]    \"{ActDesc}\"");
@@ -400,7 +349,7 @@ namespace HIFFDecompile.Chunks
                 writetext.WriteLine($"long      {frame}");
             }
 
-            Utils.PrintDeps(Deps, writetext);
+            Utils.PrintDeps(deps, writetext);
 
             writetext.WriteLine("}\n");
 
@@ -412,36 +361,15 @@ namespace HIFFDecompile.Chunks
         {
             if (InStream.debugprint) { Console.WriteLine("   ---Fade Out---"); }
 
-            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
-            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
-
-            byte type = InStream.ReadByte("Type: ");
-            //Once or multiple
-            byte trigger = InStream.ReadByte("Trigger: ");
-
-            //Not entirely sure what the bit widths are supposed to be
-
-            Dependency[] Deps = Utils.ParseDeps(InStream);
-
             InStream.Skip(36);
             Console.WriteLine("Fade Out Unimplemented");
 
             if (InStream.debugprint) { Console.WriteLine("   ---END Fade Out---"); }
         }
 
-        private static void Sound(BetterBinaryReader InStream, StreamWriter writetext)
+        private static void Sound(BetterBinaryReader InStream, StreamWriter writetext, string ActDesc, byte type, byte trigger, Dependency[] Deps)
         {
             if (InStream.debugprint) { Console.WriteLine("   ---Sound---"); }
-
-            string ActDesc = Helpers.String(InStream.ReadBytes(48)).TrimEnd('\0');
-            if (InStream.debugprint) { Console.WriteLine(ActDesc); }
-
-            //AT_START_SOUND = 145
-            byte type = InStream.ReadByte("Type: ");
-            //Once or multiple
-            byte trigger = InStream.ReadByte("Trigger: ");
-
-            Utils.Dependency[] deps = Utils.ParseDeps(InStream);
 
             if (InStream.debugprint) { Console.WriteLine("    ---RefSound---"); }
 
@@ -516,7 +444,7 @@ namespace HIFFDecompile.Chunks
             if (refScene == 9999)
                 writetext.WriteLine("RefScene  NO_SCENE");
             else
-                writetext.WriteLine($"RefScene  {Utils.GetFlagName(refScene)}");
+                writetext.WriteLine($"RefScene  {Helpers.GetFlagName(refScene)}");
             writetext.WriteLine("// the name of the text key must match the name of the sound file");
             //NOTE: For .htxt, CCTEXT_TYPE_AUTO is valid and compiler handled
             writetext.WriteLine($"byte    {Enums.CCTEXT_TYPE[textType]}    // _SCROLL, _SHORT, _NONE");
@@ -526,13 +454,13 @@ namespace HIFFDecompile.Chunks
                 if (refSetFlags[i] == -1)
                     writetext.WriteLine("  RefSetFlag  EV_NO_EVENT     // when sound begins");
                 else
-                    writetext.WriteLine($"  RefSetFlag  {Utils.GetFlagName(refSetFlags[i])}     // when sound begins");
+                    writetext.WriteLine($"  RefSetFlag  {Helpers.GetFlagName(refSetFlags[i])}     // when sound begins");
 
                 writetext.WriteLine($"  int     {Enums.tf[RefSetFlagTruths[i]]}            // Set flag TRUE or FALSE");
             }
             writetext.WriteLine("EndCount  RefSetFlag");
 
-            Utils.PrintDeps(deps, writetext);
+            Utils.PrintDeps(Deps, writetext);
 
             writetext.WriteLine($"}}\n");
 

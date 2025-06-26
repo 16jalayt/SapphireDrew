@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace Sapphire_Extract_Helpers
 {
@@ -225,16 +228,20 @@ namespace Sapphire_Extract_Helpers
             //TODO: replace with tryparseint?
             int gamenum = Int32.Parse(argnum);
 
-            if (gamenum == 33)
-            {
-                Console.WriteLine("Midnight in Salem uses Unity. This is not supported.");
-                Environment.Exit(20);
-            }
-
-            if (gamenum < 0 || gamenum > 32)
+            if (gamenum < 1 || gamenum > 33)
             {
                 Console.WriteLine("Invalid game number. Please enter a number between 0 and 32.");
                 Environment.Exit(20);
+            }
+            if (gamenum == 33)
+            {
+                Console.WriteLine("Midnight in Salem uses Unity. This is not supported.");
+                Environment.Exit(21);
+            }
+            else if (gamenum == 34)
+            {
+                Console.WriteLine("Myster of the Seven Keys uses Unity. This is not supported.");
+                Environment.Exit(22);
             }
 
             return gamenum;
@@ -243,6 +250,89 @@ namespace Sapphire_Extract_Helpers
         public static void printStringArray(string[] arr)
         {
             Console.WriteLine("[{0}]", string.Join(", ", arr));
+        }
+
+        public static void PopulateFlags(string? flagsFileName, bool verbose = false)
+        {
+            if (flagsFileName != null)
+            {
+                if (!File.Exists(flagsFileName))
+                {
+                    throw new Exception($"The flags file '{flagsFileName}' does not exist");
+                }
+
+                Console.WriteLine("Parsing Flags.hif");
+                BetterBinaryReader InStream = new BetterBinaryReader(flagsFileName);
+
+                //TODO: parse htxt
+                //Ensure that is actually a flags.hiff
+                if (!Helpers.AssertString(InStream, "DATA"))
+                {
+                    throw new Exception($"The flags file specified: '{flagsFileName}' is not a valid flags.hiff file");
+                }
+
+                //TODO: better parsing or common
+                InStream.Seek(20);
+                while (!InStream.IsEOF())
+                {
+                    //Appears at end of file
+                    int padding = InStream.ReadByte();
+                    if (padding == 0)
+                        break;
+                    InStream.Seek(-1, SeekOrigin.Current);
+
+                    string flagName = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
+                    short num = InStream.ReadShort();
+                    if (verbose)
+                        Console.WriteLine($"'{flagName}' - '{num}'");
+
+                    if (num < 100)
+                    {
+                        if (!Enums.inv.TryAdd(num, flagName))
+                            Console.WriteLine($"Duplicate flag for '{flagName}' - '{num}'");
+                    }
+                    else
+                    {
+                        //At least in WOLF, dupes seem common
+                        if (!Enums.flags.TryAdd(num, flagName))
+                            Console.WriteLine($"Duplicate flag for '{flagName}' - '{num}'");
+                    }
+                }
+
+                int flagNum = 1010;
+                for (int i = 0; i < 51; i++)
+                {
+                    if (verbose)
+                        Console.WriteLine($"'{"EV_Generic" + i}' - '{flagNum}'");
+
+                    if (!Enums.flags.TryAdd(flagNum, "EV_Generic" + i))
+                        Console.WriteLine($"Duplicate flag for '{"EV_Generic" + i}' - '{flagNum}'");
+
+                    flagNum++;
+                }
+
+                Enums.flagsReverse = Enums.flags.ToDictionary(x => x.Value, x => x.Key);
+                Enums.invReverse = Enums.inv.ToDictionary(x => x.Value, x => x.Key);
+                InStream.Dispose();
+            }
+        }
+
+        public static string GetFlagName(int num)
+        {
+            string? properName;
+            if (Enums.flags.Count != 0 && Enums.flags.TryGetValue(num, out properName))
+                return properName;
+            else
+                return num.ToString();
+        }
+
+        public static string GetInvName(int num)
+        {
+            string? properName;
+            if (Enums.inv.Count != 0 && Enums.inv.TryGetValue(num, out properName))
+                return properName;
+            else
+                return num.ToString();
         }
     }
 }

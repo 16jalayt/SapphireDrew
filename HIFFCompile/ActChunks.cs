@@ -87,7 +87,7 @@ namespace HIFFCompile
             while (InFile.PeekNextLine() != "EndCount RefSetFlag")
             {
                 //Must be immediate string because we already advanced the line pointer with the loop
-                InFile.WriteObject(outStream, "RefSetFlag");
+                InFile.WriteObject(outStream, "RefSetFlag", Enums.flagsReverse);
                 //InFile.GetNextLine();
                 InFile.WriteObject(outStream, "int", Enums.tf);
                 numDeps++;

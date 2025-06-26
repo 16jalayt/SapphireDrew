@@ -69,9 +69,9 @@ namespace HIFFDecompile
 
                 //depRefFlag
                 if (depType == "DT_EVENT")
-                    writetext.WriteLine($"RefFlag   {GetFlagName(dep.depRefFlag)}");
+                    writetext.WriteLine($"RefFlag   {Helpers.GetFlagName(dep.depRefFlag)}");
                 else if (depType == "DT_INVENTORY")
-                    writetext.WriteLine($"RefFlag   {GetInvName(dep.depRefFlag)}");
+                    writetext.WriteLine($"RefFlag   {Helpers.GetInvName(dep.depRefFlag)}");
                 else if (depType == "DT_SOUND")
                     writetext.WriteLine($"int   {Enums.soundChannel[dep.depRefFlag]}");
                 else if (depType == "DT_PLAYER_TOD")
@@ -94,83 +94,6 @@ namespace HIFFDecompile
                 writetext.WriteLine($"int     {Enums.depFlag[dep.depFlag]}");
                 writetext.WriteLine($"int     {dep.rect.RawPrint()}");
             }
-        }
-
-        private static Dictionary<int, string> Flags = new Dictionary<int, string>();
-        private static Dictionary<int, string> INV = new Dictionary<int, string>();
-
-        public static void PopulateFlags(string? flagsFileName, bool verbose = false)
-        {
-            //TODO: add .txt
-            if (flagsFileName != null)
-            {
-                if (!File.Exists(flagsFileName))
-                {
-                    Console.WriteLine("The flags file '{}' does not exist");
-                    System.Environment.Exit(1);
-                }
-
-                Console.WriteLine("Parsing Flags.hif");
-                BetterBinaryReader InStream = new BetterBinaryReader(flagsFileName);
-
-                //TODO: better parsing or common
-                InStream.Seek(20);
-                while (!InStream.IsEOF())
-                {
-                    //Appears at end of file
-                    int padding = InStream.ReadByte();
-                    if (padding == 0)
-                        break;
-                    InStream.Seek(-1, SeekOrigin.Current);
-
-                    string flagName = Helpers.String(InStream.ReadBytes(33)).TrimEnd('\0');
-                    short num = InStream.ReadShort();
-                    if (verbose)
-                        Console.WriteLine($"'{flagName}' - '{num}'");
-
-                    if (num < 100)
-                    {
-                        if (!INV.TryAdd(num, flagName))
-                            Console.WriteLine($"Duplicate flag for '{flagName}' - '{num}'");
-                    }
-                    else
-                    {
-                        //At least in WOLF, dupes seem common
-                        if (!Flags.TryAdd(num, flagName))
-                            Console.WriteLine($"Duplicate flag for '{flagName}' - '{num}'");
-                    }
-                }
-
-                int flagNum = 1010;
-                for (int i = 0; i < 51; i++)
-                {
-                    if (verbose)
-                        Console.WriteLine($"'{"EV_Generic" + i}' - '{flagNum}'");
-
-                    if (!Flags.TryAdd(flagNum, "EV_Generic" + i))
-                        Console.WriteLine($"Duplicate flag for '{"EV_Generic" + i}' - '{flagNum}'");
-
-                    flagNum++;
-                }
-            }
-        }
-
-        public static string GetFlagName(int num)
-        {
-            string? properName;
-            if (Flags.Count != 0 && Flags.TryGetValue(num, out properName))
-                return properName;
-            else
-                return num.ToString();
-        }
-
-        public static string GetInvName(int num)
-        {
-            string? properName;
-            if (INV.Count != 0 && INV.TryGetValue(num, out properName))
-                return properName;
-            else
-                return num.ToString();
         }
     }
 }

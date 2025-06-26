@@ -2,7 +2,7 @@
   "profiles": {
     "HIFFCompile": {
       "commandName": "Project",
-      "commandLineArgs": "\"S2005.htxt\" -v"
+      "commandLineArgs": "-v -f FLAGS.hiff \"S2005.htxt\""
     }
   }
 }
